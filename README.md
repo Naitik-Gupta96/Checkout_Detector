@@ -41,6 +41,7 @@ These are signals to review. The extension cannot establish intent, verify stock
 
 | Check | Signal implemented |
 | --- | --- |
+| Extra charges | The delivery, handling, small-cart and other charges in the bill, their sum, and their share of the items total |
 | Free-delivery upsell | The extra spend needed to unlock delivery minus the current delivery fee, assuming other charges stay the same |
 | Minimum-order prompt | Visible text asking the shopper to meet a stated minimum |
 | Checkout total increased | The amount payable rose while the displayed subtotal stayed the same |
@@ -62,7 +63,7 @@ Use the Dark checkout to review default add-ons and step through payment. Repeat
 
 Run the automated rule tests from this folder with `node --test tests/rules.test.cjs`.
 
-`tests/fixtures/` holds a synthetic bag and payment page laid out like a large Indian fashion retailer's checkout, where the bag's button reads **Place order** and a cash-on-delivery fee first appears at payment.
+`tests/fixtures/` holds synthetic pages for regression checks: a bag and payment page laid out like a large Indian fashion retailer's checkout (the bag's button reads **Place order**, and a cash-on-delivery fee first appears at payment), and a quick-commerce cart drawer placed after a long product grid with a pre-selected tip and donation.
 
 If the detector misses something on a real site, open **What we check → Copy page diagnostics** while watching. It copies the stage, recorded fees, and visible page text the scanner read, which is enough to reproduce the case as a fixture.
 

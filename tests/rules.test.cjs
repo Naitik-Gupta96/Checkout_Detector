@@ -8,6 +8,9 @@ const page = (properties = {}) => ({
   stage: "cart", hasTotal: true, lines: [], controls: [], dialogs: [], links: [], ...properties
 });
 
+// The fee summary appears whenever a bill lists charges; tests about other checks set it aside.
+const withoutFees = findings => findings.filter(item => item.key !== "fees");
+
 const cases = {
   urgency: { lines: [item("Only 2 left")] },
   basket: { controls: [item("Order protection ₹19", { selected: true })] },
@@ -41,8 +44,8 @@ test("Drip pricing compares the cart with payment and ignores previously disclos
     stage: "payment",
     lines: [item("Delivery charge ₹20"), item("Handling₹35"), item("Packaging fee ₹0")]
   }), memory);
-  assert.deepEqual(result.map(item => [item.key, item.evidence]), [["drip", "Handling₹35"]]);
-  assert.equal(detect(page({ stage: "payment", lines: [item("Handling fee ₹35")] }), {}).length, 0);
+  assert.deepEqual(withoutFees(result).map(item => [item.key, item.evidence]), [["drip", "Handling₹35"]]);
+  assert.equal(withoutFees(detect(page({ stage: "payment", lines: [item("Handling fee ₹35")] }), {})).length, 0);
 });
 
 test("Ordinary checkout controls and clearly disclosed billing stay unflagged", () => {
@@ -194,7 +197,7 @@ test("Fee rows are recognised by label, and a fee first shown at payment is drip
     item("Total MRP ₹4,998"), item("Platform Fee ₹20"), item("Shipping Fee FREE"),
     item("Cash on Delivery Fee ₹10"), item("Delivery fee discount ₹30"), item("Total Amount ₹2,063")
   ] }), memory);
-  assert.deepEqual(result.map(item => [item.key, item.evidence]), [
+  assert.deepEqual(withoutFees(result).map(item => [item.key, item.evidence]), [
     ["drip", "Cash on Delivery Fee ₹10"], ["total", "Total Amount ₹2,063"]
   ]);
   assert.match(result[0].signal, /Cash on Delivery Fee/);
@@ -227,4 +230,27 @@ test("A paid extra or coupon already in the bill is flagged unless the shopper t
   ]);
   assert.deepEqual(detect(page({ lines, touched: ["donat", "coupon"] }), {}).map(item => item.key), ["renewal"]);
   assert.deepEqual(detect(page({ lines: [item("Coupon wasn't applied")], touched: [] }), {}).filter(item => item.key === "autoCoupon"), []);
+});
+
+test("Charges in the bill are summarised against the items total", () => {
+  const [fees] = detect(page({ lines: [
+    item("Items total ₹80"), item("Delivery charge ⓘ ₹30₹25"), item("Handling charge ⓘ ₹11"),
+    item("Small cart charge ⓘ ₹20"), item("Late night fee FREE"), item("Grand total ₹136")
+  ] }), {});
+  assert.equal(fees.key, "fees");
+  assert.equal(fees.evidence, "Delivery charge ₹25 · Handling charge ₹11 · Small cart charge ₹20");
+  assert.match(fees.signal, /3 charges add ₹56 .* 70% on top of your ₹80 items total\. The small-cart charge/);
+  assert.deepEqual(detect(page({ stage: null, lines: [item("Handling charge ₹11")] }), {}), []);
+});
+
+test("A logged-out quick-commerce cart is recognised from its bill and Login to Proceed button", () => {
+  assert.equal(checkoutStage({
+    headings: [], lines: [item("Bill details"), item("Grand total ₹157")],
+    controls: [item("Login to Proceed")], route: " s ", hasTotal: true
+  }), "cart");
+});
+
+test("A tip row worded 'Tip for delivery partner' counts as a billed extra", () => {
+  assert.equal(detect(page({ lines: [item("Tip for delivery partner ₹20")] }), {})[0].key, "basket");
+  assert.deepEqual(detect(page({ lines: [item("Tip for delivery partner ₹20")], touched: ["tip"] }), {}), []);
 });

@@ -22,6 +22,7 @@
     account: ["Required account", "Look for guest checkout and review what information the site requires.", "nudge"],
     credit: ["Store-credit refund", "Review the refund terms before you pay, especially if you need the money returned to your original payment method.", "nudge"],
     couponUpsell: ["Coupon spend threshold", "Check the coupon conditions and decide whether you want the extra items.", "nudge"],
+    fees: ["Extra charges", "Check what each charge is for. Some, such as small-cart or late-night fees, depend on the order and can change.", "nudge"],
     autoCoupon: ["Auto-applied coupon", "Check the coupon’s conditions, such as a minimum spend or eligible items. Removing items or changing the payment method can remove it.", "nudge"]
   };
 
@@ -47,8 +48,8 @@
     const word = match[1].toLowerCase();
     return word === "promo" || word === "voucher" ? "coupon" : word;
   }))];
-  const extraRow = /^(?:[\w&'’ ]{0,24}\s)?(?:donation|tip|insurance|protection|warranty|gift (?:wrap(?:ping)?|packag(?:e|ing))|membership|subscription|(?:express|priority) (?:delivery|shipping))(?:\s[\w&'’ ]{0,16})?$/i;
-  const offerWording = /\b(?:add|get|buy|only|for|join|upgrade|save|with|unlock|want)\b/i;
+  const extraRow = /^(?:[\w&'’ ]{0,24}\s)?(?:donation|tip|insurance|protection|warranty|gift (?:wrap(?:ping)?|packag(?:e|ing))|membership|subscription|(?:express|priority) (?:delivery|shipping))(?:\s[\w&'’ ]{0,24})?$/i;
+  const offerWording = /\b(?:add|get|buy|only|join|upgrade|save|with|unlock|want)\b/i;
   // A bill row reads "<label> <amount>" with nothing after the amount.
   function billedExtra(text) {
     const amounts = prices(text);
@@ -72,7 +73,7 @@
   const payAction = /^(?:pay (?:now|securely|online)|confirm (?:and pay|order))\b|^pay\s+(?:₹|\$|€|£|inr|rs\b)/i;
   // "Place order" ends checkout on some sites but only leaves the bag on others, so it is a weak payment cue.
   const placeOrder = /^place (?:my |your )?order\b/i;
-  const advanceAction = /\b(?:(?:continue|proceed)\s+to\s+(?:checkout|pay(?:ment)?|select (?:an? )?address)|select delivery options)\b/i;
+  const advanceAction = /\b(?:(?:continue|proceed)\s+to\s+(?:checkout|pay(?:ment)?|select (?:an? )?address)|select delivery options|log ?in to (?:proceed|continue|checkout))\b/i;
   const money = String.raw`(?:₹|INR\s*|Rs\.?\s*|\$|€|£)\s*\d[\d,]*(?:\.\d{1,2})?`;
   const amountToAdd = new RegExp(String.raw`\b(?:unlock by adding|add(?:ing)?)\s+(${money})\s+more\b`, "i");
   const deliveryFee = new RegExp(String.raw`\bdelivery\s+(?:fees?|charges?)\s*[:·–—-]?\s*(${money})(?![\d.,])`, "gi");
@@ -81,6 +82,8 @@
   const couponSaving = new RegExp(String.raw`\bsave\s+(${money})\s+with\s+[A-Z0-9_-]+\b`, "gi");
   const totalRow = /^(?:order total|grand total|bill total|total (?:amount )?payable|total amount|net payable|amount (?:payable|to pay)|to pay|you pay|total)\s*[:·–—-]?\s*$/i;
   const subtotalRow = /^(?:sub\s?total|items? total|merchandise total|total mrp|(?:bag|cart|basket) total)\s*[:·–—-]?\s*$/i;
+  // What the items cost after discounts; MRP totals are list prices and would understate the fee share.
+  const itemsRow = /^(?:sub\s?total|items? total|(?:bag|cart|basket) total)\s*[:·–—-]?\s*$/i;
   const renewalRate = new RegExp(String.raw`\b(?:then|renews? at|charged at)\s+(${money})\s*(?:\/|per )\s*(week|month|year)\b`, "i");
 
   function checkoutStage({ headings, lines, controls, route, hasTotal }) {
@@ -169,7 +172,7 @@
       else findings.push(finding);
     };
 
-    const feeRows = page.lines.filter(entry => isFee(entry.text) && prices(entry.text).length <= 1);
+    const feeRows = page.lines.filter(entry => isFee(entry.text) && prices(entry.text).length <= 2);
     if (page.stage === "cart" && (feeRows.length || page.hasTotal)) {
       const subtotal = billAmount(page.lines, subtotalRow);
       const total = billAmount(page.lines, totalRow);
@@ -198,6 +201,24 @@
           add("drip", `“${feeLabel(entry.text)}” was not in the cart’s price breakdown. It first appeared at payment.`, entry);
         }
       }
+    }
+
+    // Quick-commerce fees are only listed inside the bill, so summarise what they add to the order.
+    const charged = page.stage ? feeRows.flatMap(entry => {
+      const amount = prices(entry.text).at(-1);
+      return amount?.amount > 0 && !discount.test(entry.text) ? [{ entry, amount, label: feeLabel(entry.text) }] : [];
+    }) : [];
+    if (charged.length) {
+      const currency = charged[0].amount.currency;
+      const rows = charged.filter(row => row.amount.currency === currency);
+      const sum = Math.round(rows.reduce((total, row) => total + row.amount.amount * 100, 0)) / 100;
+      const items = billAmount(page.lines, itemsRow);
+      const percent = items?.currency === currency && items.amount > 0 ? Math.round(sum / items.amount * 100) : 0;
+      const share = percent >= 1 ? ` That is ${percent}% on top of your ${formatMoney(items.amount, currency)} items total.` : "";
+      const smallCart = rows.some(row => /\bsmall[- ](?:cart|order|basket)\b/i.test(row.label))
+        ? " The small-cart charge applies because the order is below a minimum." : "";
+      add("fees", `${rows.length === 1 ? "1 charge adds" : `${rows.length} charges add`} ${formatMoney(sum, currency)} to this order.${share}${smallCart}`,
+        rows[0].entry, rows.map(row => `${row.label} ${formatMoney(row.amount.amount, currency)}`).join(" · "));
     }
 
     for (const control of page.controls) {
@@ -320,7 +341,7 @@
       }
     }
     // Security first, then money already added to the bill, then everything else in page order.
-    const priority = { rogue: 0, drip: 1, basket: 1, total: 2, upsell: 2 };
+    const priority = { rogue: 0, drip: 1, basket: 1, total: 2, fees: 2, upsell: 2 };
     return findings.sort((left, right) => (priority[left.key] ?? 3) - (priority[right.key] ?? 3));
   }
 

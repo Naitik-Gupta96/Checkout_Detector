@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Grocery delivery in minutes</title>
+<!-- Synthetic fixture modelled on a quick-commerce cart drawer: a long product grid, then the cart
+     panel appended at the end of <body>. The tip and donation are pre-selected and billed. -->
+<style>
+  body { margin: 0; font: 14px/1.4 Arial, sans-serif; color: #1f1f1f; }
+  header { display: flex; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #eee; }
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 24px; }
+  .product { border: 1px solid #eee; border-radius: 8px; padding: 10px; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 400px; overflow: auto; background: #f5f7fd; box-shadow: -4px 0 16px #0002; }
+  .card { background: #fff; margin: 12px; padding: 12px; border-radius: 12px; }
+  .row { display: flex; justify-content: space-between; margin: 6px 0; }
+  .row .strike { text-decoration: line-through; color: #888; margin-right: 4px; }
+  .chip { display: inline-block; border: 1px solid #ddd; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+  .chip.selected { border-color: #318616; background: #f0f9ec; }
+  .footer { position: sticky; bottom: 0; background: #318616; color: #fff; margin: 12px; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+  <header><b>quickmart</b><button class="cart-button">1 item ₹80</button></header>
+  <div class="grid">
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 1 Cup Curd</div><div class="qty">400 g</div><div class="price">₹40</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 2 Cup Curd</div><div class="qty">400 g</div><div class="price">₹41</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 3 Cup Curd</div><div class="qty">400 g</div><div class="price">₹42</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 4 Cup Curd</div><div class="qty">400 g</div><div class="price">₹43</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 5 Cup Curd</div><div class="qty">400 g</div><div class="price">₹44</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 6 Cup Curd</div><div class="qty">400 g</div><div class="price">₹45</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 7 Cup Curd</div><div class="qty">400 g</div><div class="price">₹46</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 8 Cup Curd</div><div class="qty">400 g</div><div class="price">₹47</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 9 Cup Curd</div><div class="qty">400 g</div><div class="price">₹48</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 10 Cup Curd</div><div class="qty">400 g</div><div class="price">₹49</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 11 Cup Curd</div><div class="qty">400 g</div><div class="price">₹50</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 12 Cup Curd</div><div class="qty">400 g</div><div class="price">₹51</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 13 Cup Curd</div><div class="qty">400 g</div><div class="price">₹52</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 14 Cup Curd</div><div class="qty">400 g</div><div class="price">₹53</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 15 Cup Curd</div><div class="qty">400 g</div><div class="price">₹54</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 16 Cup Curd</div><div class="qty">400 g</div><div class="price">₹55</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 17 Cup Curd</div><div class="qty">400 g</div><div class="price">₹56</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 18 Cup Curd</div><div class="qty">400 g</div><div class="price">₹57</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 19 Cup Curd</div><div class="qty">400 g</div><div class="price">₹58</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 20 Cup Curd</div><div class="qty">400 g</div><div class="price">₹59</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 21 Cup Curd</div><div class="qty">400 g</div><div class="price">₹60</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 22 Cup Curd</div><div class="qty">400 g</div><div class="price">₹61</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 23 Cup Curd</div><div class="qty">400 g</div><div class="price">₹62</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 24 Cup Curd</div><div class="qty">400 g</div><div class="price">₹63</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 25 Cup Curd</div><div class="qty">400 g</div><div class="price">₹64</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 26 Cup Curd</div><div class="qty">400 g</div><div class="price">₹65</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 27 Cup Curd</div><div class="qty">400 g</div><div class="price">₹66</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 28 Cup Curd</div><div class="qty">400 g</div><div class="price">₹67</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 29 Cup Curd</div><div class="qty">400 g</div><div class="price">₹68</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 30 Cup Curd</div><div class="qty">400 g</div><div class="price">₹69</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 31 Cup Curd</div><div class="qty">400 g</div><div class="price">₹70</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 32 Cup Curd</div><div class="qty">400 g</div><div class="price">₹71</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 33 Cup Curd</div><div class="qty">400 g</div><div class="price">₹72</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 34 Cup Curd</div><div class="qty">400 g</div><div class="price">₹73</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 35 Cup Curd</div><div class="qty">400 g</div><div class="price">₹74</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 36 Cup Curd</div><div class="qty">400 g</div><div class="price">₹75</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 37 Cup Curd</div><div class="qty">400 g</div><div class="price">₹76</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 38 Cup Curd</div><div class="qty">400 g</div><div class="price">₹77</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 39 Cup Curd</div><div class="qty">400 g</div><div class="price">₹78</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 40 Cup Curd</div><div class="qty">400 g</div><div class="price">₹79</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 41 Cup Curd</div><div class="qty">400 g</div><div class="price">₹80</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 42 Cup Curd</div><div class="qty">400 g</div><div class="price">₹81</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 43 Cup Curd</div><div class="qty">400 g</div><div class="price">₹82</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 44 Cup Curd</div><div class="qty">400 g</div><div class="price">₹83</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 45 Cup Curd</div><div class="qty">400 g</div><div class="price">₹84</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 46 Cup Curd</div><div class="qty">400 g</div><div class="price">₹85</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 47 Cup Curd</div><div class="qty">400 g</div><div class="price">₹86</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 48 Cup Curd</div><div class="qty">400 g</div><div class="price">₹87</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 49 Cup Curd</div><div class="qty">400 g</div><div class="price">₹88</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 50 Cup Curd</div><div class="qty">400 g</div><div class="price">₹89</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 51 Cup Curd</div><div class="qty">400 g</div><div class="price">₹90</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 52 Cup Curd</div><div class="qty">400 g</div><div class="price">₹91</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 53 Cup Curd</div><div class="qty">400 g</div><div class="price">₹92</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 54 Cup Curd</div><div class="qty">400 g</div><div class="price">₹93</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 55 Cup Curd</div><div class="qty">400 g</div><div class="price">₹94</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 56 Cup Curd</div><div class="qty">400 g</div><div class="price">₹95</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 57 Cup Curd</div><div class="qty">400 g</div><div class="price">₹96</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 58 Cup Curd</div><div class="qty">400 g</div><div class="price">₹97</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 59 Cup Curd</div><div class="qty">400 g</div><div class="price">₹98</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 60 Cup Curd</div><div class="qty">400 g</div><div class="price">₹99</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 61 Cup Curd</div><div class="qty">400 g</div><div class="price">₹40</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 62 Cup Curd</div><div class="qty">400 g</div><div class="price">₹41</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 63 Cup Curd</div><div class="qty">400 g</div><div class="price">₹42</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 64 Cup Curd</div><div class="qty">400 g</div><div class="price">₹43</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 65 Cup Curd</div><div class="qty">400 g</div><div class="price">₹44</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 66 Cup Curd</div><div class="qty">400 g</div><div class="price">₹45</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 67 Cup Curd</div><div class="qty">400 g</div><div class="price">₹46</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 68 Cup Curd</div><div class="qty">400 g</div><div class="price">₹47</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 69 Cup Curd</div><div class="qty">400 g</div><div class="price">₹48</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 70 Cup Curd</div><div class="qty">400 g</div><div class="price">₹49</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 71 Cup Curd</div><div class="qty">400 g</div><div class="price">₹50</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 72 Cup Curd</div><div class="qty">400 g</div><div class="price">₹51</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 73 Cup Curd</div><div class="qty">400 g</div><div class="price">₹52</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 74 Cup Curd</div><div class="qty">400 g</div><div class="price">₹53</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 75 Cup Curd</div><div class="qty">400 g</div><div class="price">₹54</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 76 Cup Curd</div><div class="qty">400 g</div><div class="price">₹55</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 77 Cup Curd</div><div class="qty">400 g</div><div class="price">₹56</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 78 Cup Curd</div><div class="qty">400 g</div><div class="price">₹57</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 79 Cup Curd</div><div class="qty">400 g</div><div class="price">₹58</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 80 Cup Curd</div><div class="qty">400 g</div><div class="price">₹59</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 81 Cup Curd</div><div class="qty">400 g</div><div class="price">₹60</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 82 Cup Curd</div><div class="qty">400 g</div><div class="price">₹61</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 83 Cup Curd</div><div class="qty">400 g</div><div class="price">₹62</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 84 Cup Curd</div><div class="qty">400 g</div><div class="price">₹63</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 85 Cup Curd</div><div class="qty">400 g</div><div class="price">₹64</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 86 Cup Curd</div><div class="qty">400 g</div><div class="price">₹65</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 87 Cup Curd</div><div class="qty">400 g</div><div class="price">₹66</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 88 Cup Curd</div><div class="qty">400 g</div><div class="price">₹67</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 89 Cup Curd</div><div class="qty">400 g</div><div class="price">₹68</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 90 Cup Curd</div><div class="qty">400 g</div><div class="price">₹69</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 91 Cup Curd</div><div class="qty">400 g</div><div class="price">₹70</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 92 Cup Curd</div><div class="qty">400 g</div><div class="price">₹71</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 93 Cup Curd</div><div class="qty">400 g</div><div class="price">₹72</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 94 Cup Curd</div><div class="qty">400 g</div><div class="price">₹73</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 95 Cup Curd</div><div class="qty">400 g</div><div class="price">₹74</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 96 Cup Curd</div><div class="qty">400 g</div><div class="price">₹75</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 97 Cup Curd</div><div class="qty">400 g</div><div class="price">₹76</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 98 Cup Curd</div><div class="qty">400 g</div><div class="price">₹77</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 99 Cup Curd</div><div class="qty">400 g</div><div class="price">₹78</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 100 Cup Curd</div><div class="qty">400 g</div><div class="price">₹79</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 101 Cup Curd</div><div class="qty">400 g</div><div class="price">₹80</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 102 Cup Curd</div><div class="qty">400 g</div><div class="price">₹81</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 103 Cup Curd</div><div class="qty">400 g</div><div class="price">₹82</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 104 Cup Curd</div><div class="qty">400 g</div><div class="price">₹83</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 105 Cup Curd</div><div class="qty">400 g</div><div class="price">₹84</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 106 Cup Curd</div><div class="qty">400 g</div><div class="price">₹85</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 107 Cup Curd</div><div class="qty">400 g</div><div class="price">₹86</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 108 Cup Curd</div><div class="qty">400 g</div><div class="price">₹87</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 109 Cup Curd</div><div class="qty">400 g</div><div class="price">₹88</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 110 Cup Curd</div><div class="qty">400 g</div><div class="price">₹89</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 111 Cup Curd</div><div class="qty">400 g</div><div class="price">₹90</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 112 Cup Curd</div><div class="qty">400 g</div><div class="price">₹91</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 113 Cup Curd</div><div class="qty">400 g</div><div class="price">₹92</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 114 Cup Curd</div><div class="qty">400 g</div><div class="price">₹93</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 115 Cup Curd</div><div class="qty">400 g</div><div class="price">₹94</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 116 Cup Curd</div><div class="qty">400 g</div><div class="price">₹95</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 117 Cup Curd</div><div class="qty">400 g</div><div class="price">₹96</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 118 Cup Curd</div><div class="qty">400 g</div><div class="price">₹97</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 119 Cup Curd</div><div class="qty">400 g</div><div class="price">₹98</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 120 Cup Curd</div><div class="qty">400 g</div><div class="price">₹99</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 121 Cup Curd</div><div class="qty">400 g</div><div class="price">₹40</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 122 Cup Curd</div><div class="qty">400 g</div><div class="price">₹41</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 123 Cup Curd</div><div class="qty">400 g</div><div class="price">₹42</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 124 Cup Curd</div><div class="qty">400 g</div><div class="price">₹43</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 125 Cup Curd</div><div class="qty">400 g</div><div class="price">₹44</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 126 Cup Curd</div><div class="qty">400 g</div><div class="price">₹45</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 127 Cup Curd</div><div class="qty">400 g</div><div class="price">₹46</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 128 Cup Curd</div><div class="qty">400 g</div><div class="price">₹47</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 129 Cup Curd</div><div class="qty">400 g</div><div class="price">₹48</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 130 Cup Curd</div><div class="qty">400 g</div><div class="price">₹49</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 131 Cup Curd</div><div class="qty">400 g</div><div class="price">₹50</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 132 Cup Curd</div><div class="qty">400 g</div><div class="price">₹51</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 133 Cup Curd</div><div class="qty">400 g</div><div class="price">₹52</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 134 Cup Curd</div><div class="qty">400 g</div><div class="price">₹53</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 135 Cup Curd</div><div class="qty">400 g</div><div class="price">₹54</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 136 Cup Curd</div><div class="qty">400 g</div><div class="price">₹55</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 137 Cup Curd</div><div class="qty">400 g</div><div class="price">₹56</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 138 Cup Curd</div><div class="qty">400 g</div><div class="price">₹57</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 139 Cup Curd</div><div class="qty">400 g</div><div class="price">₹58</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 140 Cup Curd</div><div class="qty">400 g</div><div class="price">₹59</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 141 Cup Curd</div><div class="qty">400 g</div><div class="price">₹60</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 142 Cup Curd</div><div class="qty">400 g</div><div class="price">₹61</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 143 Cup Curd</div><div class="qty">400 g</div><div class="price">₹62</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 144 Cup Curd</div><div class="qty">400 g</div><div class="price">₹63</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 145 Cup Curd</div><div class="qty">400 g</div><div class="price">₹64</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 146 Cup Curd</div><div class="qty">400 g</div><div class="price">₹65</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 147 Cup Curd</div><div class="qty">400 g</div><div class="price">₹66</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 148 Cup Curd</div><div class="qty">400 g</div><div class="price">₹67</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 149 Cup Curd</div><div class="qty">400 g</div><div class="price">₹68</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 150 Cup Curd</div><div class="qty">400 g</div><div class="price">₹69</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 151 Cup Curd</div><div class="qty">400 g</div><div class="price">₹70</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 152 Cup Curd</div><div class="qty">400 g</div><div class="price">₹71</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 153 Cup Curd</div><div class="qty">400 g</div><div class="price">₹72</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 154 Cup Curd</div><div class="qty">400 g</div><div class="price">₹73</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 155 Cup Curd</div><div class="qty">400 g</div><div class="price">₹74</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 156 Cup Curd</div><div class="qty">400 g</div><div class="price">₹75</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 157 Cup Curd</div><div class="qty">400 g</div><div class="price">₹76</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 158 Cup Curd</div><div class="qty">400 g</div><div class="price">₹77</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 159 Cup Curd</div><div class="qty">400 g</div><div class="price">₹78</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 160 Cup Curd</div><div class="qty">400 g</div><div class="price">₹79</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 161 Cup Curd</div><div class="qty">400 g</div><div class="price">₹80</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 162 Cup Curd</div><div class="qty">400 g</div><div class="price">₹81</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 163 Cup Curd</div><div class="qty">400 g</div><div class="price">₹82</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 164 Cup Curd</div><div class="qty">400 g</div><div class="price">₹83</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 165 Cup Curd</div><div class="qty">400 g</div><div class="price">₹84</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 166 Cup Curd</div><div class="qty">400 g</div><div class="price">₹85</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 167 Cup Curd</div><div class="qty">400 g</div><div class="price">₹86</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 168 Cup Curd</div><div class="qty">400 g</div><div class="price">₹87</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 169 Cup Curd</div><div class="qty">400 g</div><div class="price">₹88</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 170 Cup Curd</div><div class="qty">400 g</div><div class="price">₹89</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 171 Cup Curd</div><div class="qty">400 g</div><div class="price">₹90</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 172 Cup Curd</div><div class="qty">400 g</div><div class="price">₹91</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 173 Cup Curd</div><div class="qty">400 g</div><div class="price">₹92</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 174 Cup Curd</div><div class="qty">400 g</div><div class="price">₹93</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 175 Cup Curd</div><div class="qty">400 g</div><div class="price">₹94</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 176 Cup Curd</div><div class="qty">400 g</div><div class="price">₹95</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 177 Cup Curd</div><div class="qty">400 g</div><div class="price">₹96</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 178 Cup Curd</div><div class="qty">400 g</div><div class="price">₹97</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 179 Cup Curd</div><div class="qty">400 g</div><div class="price">₹98</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 180 Cup Curd</div><div class="qty">400 g</div><div class="price">₹99</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 181 Cup Curd</div><div class="qty">400 g</div><div class="price">₹40</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 182 Cup Curd</div><div class="qty">400 g</div><div class="price">₹41</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 183 Cup Curd</div><div class="qty">400 g</div><div class="price">₹42</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 184 Cup Curd</div><div class="qty">400 g</div><div class="price">₹43</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 185 Cup Curd</div><div class="qty">400 g</div><div class="price">₹44</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 186 Cup Curd</div><div class="qty">400 g</div><div class="price">₹45</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 187 Cup Curd</div><div class="qty">400 g</div><div class="price">₹46</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 188 Cup Curd</div><div class="qty">400 g</div><div class="price">₹47</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 189 Cup Curd</div><div class="qty">400 g</div><div class="price">₹48</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 190 Cup Curd</div><div class="qty">400 g</div><div class="price">₹49</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 191 Cup Curd</div><div class="qty">400 g</div><div class="price">₹50</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 192 Cup Curd</div><div class="qty">400 g</div><div class="price">₹51</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 193 Cup Curd</div><div class="qty">400 g</div><div class="price">₹52</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 194 Cup Curd</div><div class="qty">400 g</div><div class="price">₹53</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 195 Cup Curd</div><div class="qty">400 g</div><div class="price">₹54</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 196 Cup Curd</div><div class="qty">400 g</div><div class="price">₹55</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 197 Cup Curd</div><div class="qty">400 g</div><div class="price">₹56</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 198 Cup Curd</div><div class="qty">400 g</div><div class="price">₹57</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 199 Cup Curd</div><div class="qty">400 g</div><div class="price">₹58</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 200 Cup Curd</div><div class="qty">400 g</div><div class="price">₹59</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 201 Cup Curd</div><div class="qty">400 g</div><div class="price">₹60</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 202 Cup Curd</div><div class="qty">400 g</div><div class="price">₹61</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 203 Cup Curd</div><div class="qty">400 g</div><div class="price">₹62</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 204 Cup Curd</div><div class="qty">400 g</div><div class="price">₹63</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 205 Cup Curd</div><div class="qty">400 g</div><div class="price">₹64</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 206 Cup Curd</div><div class="qty">400 g</div><div class="price">₹65</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 207 Cup Curd</div><div class="qty">400 g</div><div class="price">₹66</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 208 Cup Curd</div><div class="qty">400 g</div><div class="price">₹67</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 209 Cup Curd</div><div class="qty">400 g</div><div class="price">₹68</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 210 Cup Curd</div><div class="qty">400 g</div><div class="price">₹69</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 211 Cup Curd</div><div class="qty">400 g</div><div class="price">₹70</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 212 Cup Curd</div><div class="qty">400 g</div><div class="price">₹71</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 213 Cup Curd</div><div class="qty">400 g</div><div class="price">₹72</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 214 Cup Curd</div><div class="qty">400 g</div><div class="price">₹73</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 215 Cup Curd</div><div class="qty">400 g</div><div class="price">₹74</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 216 Cup Curd</div><div class="qty">400 g</div><div class="price">₹75</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 217 Cup Curd</div><div class="qty">400 g</div><div class="price">₹76</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 218 Cup Curd</div><div class="qty">400 g</div><div class="price">₹77</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 219 Cup Curd</div><div class="qty">400 g</div><div class="price">₹78</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 220 Cup Curd</div><div class="qty">400 g</div><div class="price">₹79</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 221 Cup Curd</div><div class="qty">400 g</div><div class="price">₹80</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 222 Cup Curd</div><div class="qty">400 g</div><div class="price">₹81</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 223 Cup Curd</div><div class="qty">400 g</div><div class="price">₹82</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 224 Cup Curd</div><div class="qty">400 g</div><div class="price">₹83</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 225 Cup Curd</div><div class="qty">400 g</div><div class="price">₹84</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 226 Cup Curd</div><div class="qty">400 g</div><div class="price">₹85</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 227 Cup Curd</div><div class="qty">400 g</div><div class="price">₹86</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 228 Cup Curd</div><div class="qty">400 g</div><div class="price">₹87</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 229 Cup Curd</div><div class="qty">400 g</div><div class="price">₹88</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 230 Cup Curd</div><div class="qty">400 g</div><div class="price">₹89</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 231 Cup Curd</div><div class="qty">400 g</div><div class="price">₹90</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 232 Cup Curd</div><div class="qty">400 g</div><div class="price">₹91</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 233 Cup Curd</div><div class="qty">400 g</div><div class="price">₹92</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 234 Cup Curd</div><div class="qty">400 g</div><div class="price">₹93</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 235 Cup Curd</div><div class="qty">400 g</div><div class="price">₹94</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 236 Cup Curd</div><div class="qty">400 g</div><div class="price">₹95</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 237 Cup Curd</div><div class="qty">400 g</div><div class="price">₹96</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 238 Cup Curd</div><div class="qty">400 g</div><div class="price">₹97</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 239 Cup Curd</div><div class="qty">400 g</div><div class="price">₹98</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 240 Cup Curd</div><div class="qty">400 g</div><div class="price">₹99</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 241 Cup Curd</div><div class="qty">400 g</div><div class="price">₹40</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 242 Cup Curd</div><div class="qty">400 g</div><div class="price">₹41</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 243 Cup Curd</div><div class="qty">400 g</div><div class="price">₹42</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 244 Cup Curd</div><div class="qty">400 g</div><div class="price">₹43</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 245 Cup Curd</div><div class="qty">400 g</div><div class="price">₹44</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 246 Cup Curd</div><div class="qty">400 g</div><div class="price">₹45</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 247 Cup Curd</div><div class="qty">400 g</div><div class="price">₹46</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 248 Cup Curd</div><div class="qty">400 g</div><div class="price">₹47</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 249 Cup Curd</div><div class="qty">400 g</div><div class="price">₹48</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 250 Cup Curd</div><div class="qty">400 g</div><div class="price">₹49</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 251 Cup Curd</div><div class="qty">400 g</div><div class="price">₹50</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 252 Cup Curd</div><div class="qty">400 g</div><div class="price">₹51</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 253 Cup Curd</div><div class="qty">400 g</div><div class="price">₹52</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 254 Cup Curd</div><div class="qty">400 g</div><div class="price">₹53</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 255 Cup Curd</div><div class="qty">400 g</div><div class="price">₹54</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 256 Cup Curd</div><div class="qty">400 g</div><div class="price">₹55</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 257 Cup Curd</div><div class="qty">400 g</div><div class="price">₹56</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 258 Cup Curd</div><div class="qty">400 g</div><div class="price">₹57</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 259 Cup Curd</div><div class="qty">400 g</div><div class="price">₹58</div><button class="add">ADD</button></div>
+<div class="product"><div class="eta">16 MINS</div><div class="name">Product 260 Cup Curd</div><div class="qty">400 g</div><div class="price">₹59</div><button class="add">ADD</button></div>
+  </div>
+  <div class="drawer">
+    <div class="card"><b>My Cart</b></div>
+    <div class="card">
+      <div>Delivery in 16 minutes</div>
+      <div>Shipment of 1 item</div>
+      <div class="row"><span>Amul Masti Pouch Curd 1 kg</span><span>₹80</span></div>
+    </div>
+    <div class="card">
+      <div><b>Bill details</b></div>
+      <div class="row"><span>Items total</span><span>₹80</span></div>
+      <div class="row"><span>Delivery charge <span>ⓘ</span></span><span><span class="strike">₹30</span>₹25</span></div>
+      <div class="row"><span>Handling charge <span>ⓘ</span></span><span>₹11</span></div>
+      <div class="row"><span>Small cart charge <span>ⓘ</span></span><span>₹20</span></div>
+      <div class="row"><span>Tip for delivery partner</span><span>₹20</span></div>
+      <div class="row"><span>Feeding India donation</span><span>₹1</span></div>
+      <div class="row"><b>Grand total</b><b>₹157</b></div>
+    </div>
+    <div class="card">
+      <div class="row"><span>Feeding India donation ₹1</span><input type="checkbox" checked aria-label="Feeding India donation"></div>
+      <div>Working towards a malnutrition free India. Feeding India...read more</div>
+    </div>
+    <div class="card">
+      <div><b>Tip your delivery partner</b></div>
+      <div>Your kindness means a lot! 100% of your tip will go directly to your delivery partner.</div>
+      <div><div class="chip selected">₹20</div> <div class="chip">₹30</div> <div class="chip">₹50</div> <div class="chip">Custom</div></div>
+    </div>
+    <div class="card"><b>Cancellation Policy</b><div>Orders cannot be cancelled once packed for delivery.</div></div>
+    <div class="footer"><span>₹157 TOTAL</span><span>Login to Proceed ›</span></div>
+  </div>
+</body>
+</html>

@@ -32,7 +32,7 @@
   const interactive = 'button,a[href],input[type="checkbox"],input[type="radio"],[role="button"],[role="checkbox"],[role="radio"],[role="switch"],[aria-pressed]';
   const modal = 'dialog[open],[role="dialog"],[role="alertdialog"],[aria-modal="true"]';
   const currency = /₹|\bINR\s*\d|\bRs\.?\s*\d|[$€£]\s*\d/i;
-  const lineSelector = "main *,[role=main] *,h1,h2,h3,p,li,td,dt,dd,label,span,div,section,article,aside";
+  const lineSelector = "main *,[role=main] *,h1,h2,h3,h4,h5,h6,b,strong,p,li,td,dt,dd,label,span,div,section,article,aside";
   const onBlinkit = /(?:^|\.)blinkit\.com$/i.test(location.hostname);
   const donationChoice = "feeding india donation";
 
@@ -46,6 +46,24 @@
     let drawer = bill.parentElement;
     while (drawer && !drawer.contains(cart)) drawer = drawer.parentElement;
     return drawer && drawer !== document.body && drawer !== document.documentElement ? drawer : null;
+  }
+
+  // Bill summaries and open dialogs are read first, so a cart drawer placed after a long product grid
+  // is not cut off by the line limit.
+  const billHeading = /^(?:bill (?:details|summary)|price details(?: \(\d+ items?\))?|order summary|payment (?:details|summary)|my cart|your cart)$/i;
+  function checkoutScopes(drawer) {
+    const scopes = drawer ? [drawer] : [];
+    for (const dialog of document.querySelectorAll(modal)) if (available(dialog)) scopes.push(dialog);
+    const markers = [...document.querySelectorAll("h1,h2,h3,h4,b,strong,span,div,p")].filter(element =>
+      element.childElementCount <= 1 && billHeading.test(normalize(element.textContent)) && available(element)).slice(0, 4);
+    for (const marker of markers) {
+      // Widen to the largest ancestor that still reads like one panel rather than the whole page.
+      let scope = marker;
+      while (scope.parentElement && scope.parentElement !== document.body &&
+        normalize(scope.parentElement.innerText).length < 4000) scope = scope.parentElement;
+      if (!scopes.some(existing => existing.contains(scope))) scopes.push(scope);
+    }
+    return scopes;
   }
 
   function billedDonation(scope, lines, entry) {
@@ -110,8 +128,9 @@
   function snapshot() {
     targets = new Map();
     const drawer = onBlinkit ? cartDrawer() : null;
+    const scopes = checkoutScopes(drawer);
     const prioritized = selector => new Set([
-      ...(drawer?.querySelectorAll(selector) || []), ...document.querySelectorAll(selector)
+      ...scopes.flatMap(scope => [...scope.querySelectorAll(selector)]), ...document.querySelectorAll(selector)
     ]);
     const entry = (element, text) => {
       const id = targets.size;
