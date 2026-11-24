@@ -219,3 +219,12 @@ test("Findings are tagged as CCPA categories or additional checks", () => {
   const [consent] = detect(page({ controls: [item("Send me marketing emails", { selected: true, toggleable: true })] }), {});
   assert.equal(consent.ccpa, false);
 });
+
+test("A paid extra or coupon already in the bill is flagged unless the shopper touched it", () => {
+  const lines = [item("Donation ₹10"), item("Coupon Discount -₹200"), item("Coupon Discount Apply Coupon"), item("Membership is free for 30 days, then ₹149/month.")];
+  assert.deepEqual(detect(page({ lines }), {}).map(item => [item.key, item.evidence]), [
+    ["basket", "Donation ₹10"], ["autoCoupon", "Coupon Discount -₹200"], ["renewal", "Membership is free for 30 days, then ₹149/month."]
+  ]);
+  assert.deepEqual(detect(page({ lines, touched: ["donat", "coupon"] }), {}).map(item => item.key), ["renewal"]);
+  assert.deepEqual(detect(page({ lines: [item("Coupon wasn't applied")], touched: [] }), {}).filter(item => item.key === "autoCoupon"), []);
+});

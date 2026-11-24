@@ -14,7 +14,8 @@
   .item { border: 1px solid #eaeaec; padding: 12px; margin-bottom: 12px; }
   .row { display: flex; justify-content: space-between; margin: 10px 0; }
   .total { display: flex; justify-content: space-between; font-weight: 700; border-top: 1px solid #eaeaec; padding-top: 12px; }
-  .chip { border: 1px solid #d4d5d9; border-radius: 16px; padding: 4px 10px; background: #fff; }
+  .chip { display: inline-block; border: 1px solid #d4d5d9; border-radius: 16px; padding: 4px 10px; background: #fff; cursor: pointer; }
+  .chip-selected { border-color: #ff3f6c; color: #ff3f6c; }
   .left-stock { color: #ff905a; font-weight: 700; font-size: 12px; }
   button.place { width: 100%; background: #ff3f6c; color: #fff; border: 0; padding: 12px; font-weight: 700; }
   .strike { text-decoration: line-through; color: #94969f; }
@@ -38,8 +39,12 @@
         <div>Offer ends in 00:14:59</div>
       </div>
       <div class="item">
+        <div>COUPONS</div>
+        <div>1 Coupon applied · You saved ₹200</div>
+      </div>
+      <div class="item">
         <div>DONATE AND MAKE A DIFFERENCE</div>
-        <button class="chip">₹10</button> <button class="chip">₹20</button> <button class="chip">₹50</button> <button class="chip">₹100</button>
+        <div class="donation-chips"><div class="chip chip-selected">₹10</div> <div class="chip">₹20</div> <div class="chip">₹50</div> <div class="chip">₹100</div></div>
       </div>
       <div class="item">
         <div>Buying for a loved one?</div>
@@ -50,11 +55,12 @@
       <div>PRICE DETAILS (2 Items)</div>
       <div class="row"><span>Total MRP</span><span>₹4,998</span></div>
       <div class="row"><span>Discount on MRP</span><span>-₹3,000</span></div>
-      <div class="row"><span>Coupon Discount</span><span>Apply Coupon</span></div>
+      <div class="row"><span>Coupon Discount</span><span>-₹200</span></div>
       <div class="row"><span>Platform Fee <a href="#fee">Know More</a></span><span>₹20</span></div>
       <div class="row"><span>Shipping Fee <a href="#ship">Know More</a></span><span><span class="strike">₹79</span> FREE</span></div>
       <div class="row"><span>Gift Packaging</span><span>₹35</span></div>
-      <div class="total"><span>Total Amount</span><span>₹2,053</span></div>
+      <div class="row"><span>Donation</span><span>₹10</span></div>
+      <div class="total"><span>Total Amount</span><span>₹1,863</span></div>
       <button class="place" onclick="location.href='/checkout/payment'">PLACE ORDER</button>
     </div>
   </div>

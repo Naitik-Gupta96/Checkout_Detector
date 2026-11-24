@@ -21,7 +21,8 @@
     renewal: ["Trial renewal", "Check when the first charge starts and how to cancel the trial in time.", "nudge"],
     account: ["Required account", "Look for guest checkout and review what information the site requires.", "nudge"],
     credit: ["Store-credit refund", "Review the refund terms before you pay, especially if you need the money returned to your original payment method.", "nudge"],
-    couponUpsell: ["Coupon spend threshold", "Check the coupon conditions and decide whether you want the extra items.", "nudge"]
+    couponUpsell: ["Coupon spend threshold", "Check the coupon conditions and decide whether you want the extra items.", "nudge"],
+    autoCoupon: ["Auto-applied coupon", "Check the coupon’s conditions, such as a minimum spend or eligible items. Removing items or changing the payment method can remove it.", "nudge"]
   };
 
   // A bill row is a fee when its label (the text before the amount) is short and names a fee, charge, or tax.
@@ -39,6 +40,29 @@
     return label.length >= 3 && label.length <= 48 && !notFee.test(label) && (namedFee.test(text) || feeWord.test(label));
   };
   const feeName = text => feeLabel(text).toLowerCase().replace(/\s+(?:fees?|charges?)$/, "");
+
+  // Topics link a bill row to the controls the shopper clicked, so an extra they chose is not reported.
+  const topicPattern = /\b(donat|tip|insur|protect|warrant|gift|member|subscri|express|priority|coupon|promo|voucher)/gi;
+  const topics = text => [...new Set(Array.from(text.matchAll(topicPattern), match => {
+    const word = match[1].toLowerCase();
+    return word === "promo" || word === "voucher" ? "coupon" : word;
+  }))];
+  const extraRow = /^(?:[\w&'’ ]{0,24}\s)?(?:donation|tip|insurance|protection|warranty|gift (?:wrap(?:ping)?|packag(?:e|ing))|membership|subscription|(?:express|priority) (?:delivery|shipping))(?:\s[\w&'’ ]{0,16})?$/i;
+  const offerWording = /\b(?:add|get|buy|only|for|join|upgrade|save|with|unlock|want)\b/i;
+  // A bill row reads "<label> <amount>" with nothing after the amount.
+  function billedExtra(text) {
+    const amounts = prices(text);
+    if (amounts.length !== 1 || amounts[0].amount <= 0) return null;
+    const start = text.indexOf(amounts[0].label);
+    if (text.slice(start + amounts[0].label.length).trim()) return null;
+    const label = feeLabel(text.slice(0, start));
+    if (!extraRow.test(label) || offerWording.test(label)) return null;
+    return { label, amount: amounts[0].label.replace(/\s+/g, ""), topics: topics(label) };
+  }
+  const couponNotice = /\b(?:coupons?|promo(?: code)?|vouchers?)\b.{0,40}\b(?:auto[- ]?)?applied\b|\bauto[- ]?applied\b/i;
+  const couponRow = /^(?:coupon|promo|voucher)\s+(?:discount|savings?|applied)\b/i;
+  const appliedCoupon = text => !/\b(?:not|no|couldn.t|can.t|cannot|wasn.t)\b.{0,12}applied/i.test(text) &&
+    (couponNotice.test(text) || (couponRow.test(text) && prices(text).some(price => price.amount > 0)));
 
   const cartLabel = /^(?:my |your |shopping )?(?:cart|bag|basket)(?:\s*\(\d+\))?$/i;
   const cartRoute = /(?:^|\s)(?:view|my|shopping)?\s?(?:cart|bag|basket)(?:\s|\.|$)/i;
@@ -202,8 +226,17 @@
       }
     }
 
+    const touched = new Set(page.touched || []);
     for (const entry of page.lines) {
       const text = entry.text;
+      const billed = page.stage && billedExtra(text);
+      if (billed && !billed.topics.some(topic => touched.has(topic)) &&
+          !findings.some(item => item.key === "basket" && topics(item.evidence).some(topic => billed.topics.includes(topic)))) {
+        add("basket", `${billed.amount} for “${billed.label}” is already in your bill, and you haven’t selected it during this watch.`, entry);
+      }
+      if (page.stage && !touched.has("coupon") && !findings.some(item => item.key === "autoCoupon") && appliedCoupon(text)) {
+        add("autoCoupon", "A coupon is applied, but you haven’t opened or applied one during this watch.", entry);
+      }
       const upsell = getDeliveryUpsell(entry);
       if (upsell) add("upsell", upsell.comparison, entry, upsell.offer);
       const couponOffer = getCouponUpsell(entry);
@@ -308,5 +341,5 @@
     return candidates.size === 1 ? candidates.values().next().value : null;
   }
 
-  globalThis.CheckoutRules = { checkoutStage, detect, rules };
+  globalThis.CheckoutRules = { checkoutStage, detect, rules, topics };
 })();

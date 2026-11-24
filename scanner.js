@@ -2,7 +2,7 @@
   if (globalThis.checkoutScannerRunning) return;
   globalThis.checkoutScannerRunning = true;
 
-  const memory = {};
+  const memory = { touched: new Set() };
   const prompts = new Map();
   const choices = new Set();
   let dismissed = new Set();
@@ -29,7 +29,7 @@
     return element.getClientRects().length > 0 && getComputedStyle(element).visibility === "visible" &&
       !element.closest("[inert]") && (!hidden || (onBlinkit && hidden === document.body));
   }
-  const interactive = 'button,a[href],input[type="checkbox"],input[type="radio"],[role="button"],[role="checkbox"],[role="radio"],[aria-pressed]';
+  const interactive = 'button,a[href],input[type="checkbox"],input[type="radio"],[role="button"],[role="checkbox"],[role="radio"],[role="switch"],[aria-pressed]';
   const modal = 'dialog[open],[role="dialog"],[role="alertdialog"],[aria-modal="true"]';
   const currency = /₹|\bINR\s*\d|\bRs\.?\s*\d|[$€£]\s*\d/i;
   const lineSelector = "main *,[role=main] *,h1,h2,h3,p,li,td,dt,dd,label,span,div,section,article,aside";
@@ -84,6 +84,7 @@
     if (/^(?:₹|\$|€|£)\s*\d/.test(direct)) {
       const context = normalize(element.parentElement?.parentElement?.innerText);
       if (/\b(?:rider|driver)\b/i.test(context) && /\b(?:tip|thank)\b/i.test(context)) return `Rider tip ${direct}`;
+      if (/\bdonat(?:e|ion)\b/i.test(context) && context.length < 400) return `Donation ${direct}`;
     }
     return direct;
   }
@@ -91,7 +92,19 @@
   function selected(element) {
     return element.checked === true ||
       ["aria-checked", "aria-pressed", "aria-selected"].some(name => element.getAttribute(name) === "true") ||
-      (currency.test(label(element)) && element.classList.contains("chip") && element.classList.contains("on"));
+      (currency.test(label(element)) && element.classList.contains("chip") && element.classList.contains("on")) ||
+      // Custom chips and checkboxes often mark selection only with a class such as "chip-selected" or "isChecked".
+      /(?:^|[\s_-])(?:is-?)?(?:selected|checked)(?:$|[\s_-])|[a-z](?:Selected|Checked)\b/.test(element.className?.baseVal ?? element.className ?? "");
+  }
+
+  // Remembers what the shopper interacted with (donation, coupon, tip...) by reading the clicked area's short label.
+  function recordTouch(target) {
+    let node = target;
+    for (let depth = 0; node && node !== document.body && depth < 4; depth++, node = node.parentElement) {
+      const text = normalize(node.innerText);
+      if (text.length > 160) break;
+      for (const topic of CheckoutRules.topics(text)) if (memory.touched.size < 40) memory.touched.add(topic);
+    }
   }
 
   function snapshot() {
@@ -176,7 +189,7 @@
     const stage = CheckoutRules.checkoutStage({ headings, lines, controls, route, hasTotal }) || (drawer ? "cart" : null);
     const donation = billedDonation(drawer, lines, entry);
     if (donation) controls.unshift(donation);
-    return { lines, controls, dialogs, links, headings, stage, hasTotal };
+    return { lines, controls, dialogs, links, headings, stage, hasTotal, touched: [...memory.touched] };
   }
 
   function promptKey(element) {
@@ -186,6 +199,7 @@
 
   function onClick(event) {
     if (!event.isTrusted || !(event.target instanceof Element)) return;
+    recordTouch(event.target);
     if (donationCard?.contains(event.target)) {
       const bounds = donationCard.getBoundingClientRect();
       if (!donationIncluded && event.clientX >= bounds.left + bounds.width * 0.75) clickedUncheckedDonation = true;
@@ -218,7 +232,7 @@
     const baseline = memory.cart ? { labels: memory.cart.labels || [], total: memory.cart.total || null } : null;
     result = { active: true, stage: page.stage, findings, hasCart: Boolean(memory.cart), baseline, dismissed: dismissed.size };
     renderNotice(result);
-    const update = JSON.stringify({ cart: memory.cart, count: findings.length, dismissed: [...dismissed] });
+    const update = JSON.stringify({ cart: memory.cart, count: findings.length, dismissed: [...dismissed], touched: [...memory.touched] });
     if (update !== lastUpdate) {
       lastUpdate = update;
       chrome.runtime.sendMessage({ type: "update", ...JSON.parse(update) }).then(response => {
@@ -443,6 +457,7 @@
     if (!response?.active) return dispose();
     memory.cart = response.cart;
     dismissed = new Set(response.dismissed || []);
+    memory.touched = new Set(response.touched || []);
     document.addEventListener("click", onClick, true);
     observer = new MutationObserver(records => { if (pageChanged(records)) queueScan(); });
     observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true });

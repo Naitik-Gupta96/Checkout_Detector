@@ -22,7 +22,7 @@ The [activeTab permission](https://developer.chrome.com/docs/extensions/develop/
 | CCPA category | Signal implemented |
 | --- | --- |
 | False urgency | Scarcity or deadline language, with stronger evidence when a visible countdown jumps back up after nearly expiring |
-| Basket sneaking | A visible paid extra selected before the extension observed the shopper choose it |
+| Basket sneaking | A paid extra (donation, tip, gift packaging, protection, membership) that is pre-selected or already billed, which the shopper has not clicked during the watch |
 | Confirm shaming | Guilt- or fear-based language on a decline option |
 | Forced action | A mandatory marketing, contact-sharing, notification, or app-download prompt |
 | Subscription trap | A trial requiring a payment method or wording that limits cancellation or sends the shopper to another channel |
@@ -47,6 +47,7 @@ These are signals to review. The extension cannot establish intent, verify stock
 | Preselected marketing consent | A selected opt-in for marketing, personalisation, or tracking |
 | Lost discount | A notice that a coupon, voucher, or discount is unavailable or was removed |
 | Coupon spend threshold | The extra spend required to unlock a coupon minus its advertised savings |
+| Auto-applied coupon | A coupon shown as applied although the shopper has not touched the coupon section, so its conditions are worth checking |
 | Trial renewal | A recurring rate visible alongside a free trial or free period |
 | Required account | A notice that sign-in or registration is required to check out |
 | Store-credit refund | Terms saying refunds are limited to store credit, a gift card, or a wallet balance |
