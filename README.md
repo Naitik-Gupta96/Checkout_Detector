@@ -1,0 +1,64 @@
+# Checkout Dark Pattern Detector
+
+This Chrome extension watches a shopper-selected web tab and flags visible signals associated with the 13 categories in [Annexure 1 of the CCPA guidelines](https://consumeraffairs.gov.in/public/upload/files/The%20Guidelines%20for%20Prevention%20and%20Regulation%20of%20Dark%20Patterns%2C%202023_1732705993.pdf). Each card shows the observed evidence, a suggested next step, and a control that highlights the relevant part of the page.
+
+## Install and use
+
+1. Extract the ZIP if applicable. Open `chrome://extensions` and turn on **Developer mode**.
+2. Choose **Load unpacked** and select the folder containing `manifest.json`. Pin the extension so you can see its badge.
+3. Open the cart on a website. Open the extension and click **Start watching**. Check that the cart has loaded before going to payment.
+4. The dark **Checkout Detector** panel opens at the bottom left when it finds an alert. It lists every current signal with evidence and a suggested action. **Show on page** minimizes the panel and highlights the relevant control. Use **+** or **−** to expand or minimize it.
+5. The toolbar badge counts current findings. Use the popup to review alerts, copy their summary, or open **What we check**. A dot in the toolbar indicates an active watch with zero current alerts.
+6. Click **Stop watching** in either view to end the session. If checkout opens a new tab or moves to another origin, start a fresh watch there. A new watch cannot reconstruct fee evidence from the previous tab.
+
+The popup indicates whether it recognized the cart or payment screen and whether it saved the cart fee baseline. For unpacked updates, click **Reload** on the extension card at `chrome://extensions`, then refresh the shopping tab and start a new watch.
+
+On Blinkit, open **My Cart** and expand **Sub total** under **Bill details** if the individual items are collapsed. The detector checks for a positive **Feeding India donation** line and highlights the donation card. If the cart already included the donation when the watch began, the alert reports that observation without assuming who selected it.
+
+The [activeTab permission](https://developer.chrome.com/docs/extensions/develop/concepts/activeTab) grants temporary access to the selected tab. The extension processes evidence locally. It reads displayed labels and selected controls, without reading typed field values. The tab's cart fee labels are held in Chrome's in-memory session storage to support same-origin navigation. The extension sends no data to a server and does not click any purchase or removal controls.
+
+## Detection coverage
+
+| CCPA category | Signal implemented |
+| --- | --- |
+| False urgency | Scarcity or deadline language, with stronger evidence when a visible countdown jumps back up after nearly expiring |
+| Basket sneaking | A visible paid extra selected before the extension observed the shopper choose it |
+| Confirm shaming | Guilt- or fear-based language on a decline option |
+| Forced action | A mandatory marketing, contact-sharing, notification, or app-download prompt |
+| Subscription trap | A trial requiring a payment method or wording that limits cancellation or sends the shopper to another channel |
+| Interface interference | A dialog's decline option is substantially smaller or fainter than its accept option |
+| Bait and switch | Sold-out wording paired with a priced alternative |
+| Drip pricing | A positive fee first shown at payment after the extension captured the cart |
+| Disguised advertisement | A recommendation link with advertising indicators and no visible disclosure nearby |
+| Nagging | A commercial dialog returns after the shopper dismisses it |
+| Trick question | Confusing opt-out wording or an answer that conflicts with the question |
+| SaaS billing | Automatic billing in a software subscription statement without a visible amount in that statement |
+| Rogue malwares | A webpage claims a device is infected or locked and asks the shopper to download, call, or pay |
+
+These are signals to review. The extension cannot establish intent, verify stock, inspect bank transactions, or determine whether malware is present. English-language heuristics cover the visible top-level page. Native apps, embedded cross-origin payment frames, and unfamiliar layouts may escape detection. A site that changes fees after an address or basket update can trigger a late-fee signal. A shopper who activates the extension after making selections can see those selections flagged.
+
+## Additional checks
+
+| Check | Signal implemented |
+| --- | --- |
+| Free-delivery upsell | The extra spend needed to unlock delivery minus the current delivery fee, assuming other charges stay the same |
+| Minimum-order prompt | Visible text asking the shopper to meet a stated minimum |
+| Checkout total increased | The amount payable rose while the displayed subtotal stayed the same |
+| Preselected marketing consent | A selected opt-in for marketing, personalisation, or tracking |
+| Lost discount | A notice that a coupon, voucher, or discount is unavailable or was removed |
+| Coupon spend threshold | The extra spend required to unlock a coupon minus its advertised savings |
+| Trial renewal | A recurring rate visible alongside a free trial or free period |
+| Required account | A notice that sign-in or registration is required to check out |
+| Store-credit refund | Terms saying refunds are limited to store credit, a gift card, or a wallet balance |
+
+Interface interference also checks cookie dialogs that expose **Accept all** and lack a clear decline control. Shopping nudges and terms can help the shopper make a decision and vary with context.
+
+## Test the project prototype
+
+From the parent folder, serve the supplied simulator over HTTP. For example, run `python -m http.server 8765 --bind 127.0.0.1 --directory <folder-containing-simulator>` and open the simulator through `http://127.0.0.1:8765`. The extension only watches HTTP and HTTPS pages.
+
+Use the Dark checkout to review default add-ons and step through payment. Repeat in Fair with an upfront fee and an extra that you deliberately opt into. For merchant validation, record the site, date, checkout step, expected evidence, actual result, and whether the suggested action was possible. Real merchant coverage remains unverified.
+
+Run the automated rule tests from this folder with `node --test tests/rules.test.cjs`.
+
+A local Chrome smoke test checked a preselected extra, a deliberately selected tip, evidence highlighting, cart-to-payment navigation, a newly displayed fee, and stopping the watch. The smoke test used a temporary localhost permission to drive Chrome without clicking the toolbar. The distributed manifest uses only temporary tab access.

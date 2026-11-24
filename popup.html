@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout Detector</title>
+  <link rel="stylesheet" href="popup.css">
+  <script defer src="rules.js"></script>
+  <script defer src="ui.js"></script>
+  <script defer src="popup.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div id="brand"></div>
+    <span id="site">Chrome</span>
+  </header>
+  <main>
+    <section class="status">
+      <span id="state"><span aria-hidden="true"></span><span id="state-label">Standby</span></span>
+      <h2 id="headline" role="status">Check this checkout</h2>
+      <p id="detail">Start from the cart for a comparison with the payment screen.</p>
+      <p id="progress" hidden></p>
+      <button id="toggle" type="button" disabled>Start watching</button>
+    </section>
+    <nav aria-label="Checkout Detector views">
+      <button id="alerts-tab" aria-pressed="true" aria-controls="alerts-view">Alerts <span id="count">0</span></button>
+      <button id="coverage-tab" aria-pressed="false" aria-controls="coverage-view">What we check</button>
+    </nav>
+    <section id="alerts-view" aria-label="Current alerts">
+      <div id="alert-tools" hidden><button id="copy" type="button" class="action">Copy alert summary</button><span id="copy-status" role="status"></span></div>
+      <div id="findings"></div>
+      <p id="empty">Start watching to see alerts for this tab.</p>
+    </section>
+    <section id="coverage-view" hidden aria-label="Detection coverage">
+      <h2>CCPA categories</h2>
+      <ul id="categories"></ul>
+      <h2>Additional checks</h2>
+      <ul id="additional"></ul>
+    </section>
+  </main>
+  <footer>Scans this tab. Evidence stays on your device.</footer>
+</body>
+</html>

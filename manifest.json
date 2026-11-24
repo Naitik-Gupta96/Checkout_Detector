@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Checkout Dark Pattern Detector",
+  "version": "1.1.0",
+  "description": "Review possible dark patterns and get practical guidance before you pay.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "background": { "service_worker": "worker.js" },
+  "action": {
+    "default_title": "Checkout Dark Pattern Detector",
+    "default_popup": "popup.html"
+  }
+}
