@@ -7,8 +7,8 @@ This Chrome extension watches a shopper-selected web tab and flags visible signa
 1. Extract the ZIP if applicable. Open `chrome://extensions` and turn on **Developer mode**.
 2. Choose **Load unpacked** and select the folder containing `manifest.json`. Pin the extension so you can see its badge.
 3. Open the cart on a website. Open the extension and click **Start watching**. Check that the cart has loaded before going to payment.
-4. The dark **Checkout Detector** panel opens at the bottom left when it finds an alert. It lists every current signal with evidence and a suggested action. **Show on page** minimizes the panel and highlights the relevant control. Use **+** or **−** to expand or minimize it.
-5. The toolbar badge counts current findings. Use the popup to review alerts, copy their summary, or open **What we check**. A dot in the toolbar indicates an active watch with zero current alerts.
+4. The **Checkout Detector** panel opens at the bottom left when it finds an alert. Each alert names the pattern, quotes the text found on the page, and suggests a next step. **Show on page** minimizes the panel and outlines the relevant element. **I chose this** (for pre-selected extras) or **Dismiss** hides an alert for the rest of the watch.
+5. The toolbar badge counts current findings. The popup shows a **Cart → Payment** tracker and the fees recorded from your cart, so you can see what the payment screen is compared against. A dot in the toolbar indicates an active watch with zero current alerts.
 6. Click **Stop watching** in either view to end the session. If checkout opens a new tab or moves to another origin, start a fresh watch there. A new watch cannot reconstruct fee evidence from the previous tab.
 
 The popup indicates whether it recognized the cart or payment screen and whether it saved the cart fee baseline. For unpacked updates, click **Reload** on the extension card at `chrome://extensions`, then refresh the shopping tab and start a new watch.
@@ -60,5 +60,9 @@ From the parent folder, serve the supplied simulator over HTTP. For example, run
 Use the Dark checkout to review default add-ons and step through payment. Repeat in Fair with an upfront fee and an extra that you deliberately opt into. For merchant validation, record the site, date, checkout step, expected evidence, actual result, and whether the suggested action was possible. Real merchant coverage remains unverified.
 
 Run the automated rule tests from this folder with `node --test tests/rules.test.cjs`.
+
+`tests/fixtures/` holds a synthetic bag and payment page laid out like a large Indian fashion retailer's checkout, where the bag's button reads **Place order** and a cash-on-delivery fee first appears at payment.
+
+If the detector misses something on a real site, open **What we check → Copy page diagnostics** while watching. It copies the stage, recorded fees, and visible page text the scanner read, which is enough to reproduce the case as a fixture.
 
 A local Chrome smoke test checked a preselected extra, a deliberately selected tip, evidence highlighting, cart-to-payment navigation, a newly displayed fee, and stopping the watch. The smoke test used a temporary localhost permission to drive Chrome without clicking the toolbar. The distributed manifest uses only temporary tab access.

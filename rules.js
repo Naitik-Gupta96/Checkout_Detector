@@ -24,17 +24,30 @@
     couponUpsell: ["Coupon spend threshold", "Check the coupon conditions and decide whether you want the extra items.", "nudge"]
   };
 
-  const fee = /^(?:(?:delivery|handling|platform|packaging|small[- ](?:cart|order)|service|(?:late[- ]night\s+)?convenience(?:\s*&\s*safety)?|processing|payment|booking|bag|regulatory|surge)\s+(?:fees?|charges?)|(?:delivery|handling|packaging)\s*[:·–—₹$€£-]|(?:tax(?:es)?|gst)\b)/i;
-  const extra = /\b(?:tip|donat(?:e|ion)|insurance|protection|warranty|membership|add[- ]on|gift wrap|subscription|free trial)\b/i;
+  // A bill row is a fee when its label (the text before the amount) is short and names a fee, charge, or tax.
+  const namedFee = /^(?:(?:delivery|handling|packaging)\s*[:·–—₹$€£-]|(?:tax(?:es)?|gst)\b)/i;
+  const feeWord = /\b(?:fees?|charges?|surcharges?|tax(?:es)?|gst|cess)\b/i;
+  const notFee = /\b(?:discount|saving|savings|off|waiver|cashback|refund|no|without|zero)\b/i;
+  const extra = /\b(?:tip|donat(?:e|ion)|insurance|protection|warranty|membership|add[- ]on|gift (?:wrap(?:ping)?|packag(?:e|ing))|subscription|free trial|(?:express|priority) (?:delivery|shipping))\b/i;
   const membership = /\b(?:subscription|membership|cancel(?:lation)? (?:your )?plan|free trial)\b/i;
   const billingContext = /\b(?:software|saas|cloud storage|productivity|workspace|streaming|subscription plan)\b/i;
   const discount = /(?:free|waived|included)\s*$/i;
-  const feeName = text => text.replace(/\s*[:·–—-]?\s*(?:₹|INR|Rs\.?\s|\$|€|£|free\b|waived\b|included\b).*$/i, "")
-    .trim().toLowerCase().replace(/\s+(?:fees?|charges?)$/, "");
+  const feeLabel = text => text.split(/\s*[:·–—-]?\s*(?:₹|\bINR\b|\bRs\.?\s|\$|€|£|\bfree\b|\bwaived\b|\bincluded\b)/i)[0]
+    .replace(/\b(?:know more|learn more|details|info)\b|[?ⓘ()]/gi, " ").replace(/\s+/g, " ").trim();
+  const isFee = text => {
+    const label = feeLabel(text);
+    return label.length >= 3 && label.length <= 48 && !notFee.test(label) && (namedFee.test(text) || feeWord.test(label));
+  };
+  const feeName = text => feeLabel(text).toLowerCase().replace(/\s+(?:fees?|charges?)$/, "");
 
   const cartLabel = /^(?:my |your |shopping )?(?:cart|bag|basket)(?:\s*\(\d+\))?$/i;
-  const paymentLabel = /^(?:(?:select|choose)(?: your)? )?payment(?: (?:method|methods|details|options))?$|^(?:review (?:your )?order|place (?:your |my )?order)$/i;
-  const payAction = /^(?:pay (?:now|securely|online)|place (?:my |your )?order|confirm (?:and pay|order))\b|^pay\s+(?:₹|\$|€|£|inr|rs\b)/i;
+  const cartRoute = /(?:^|\s)(?:view|my|shopping)?\s?(?:cart|bag|basket)(?:\s|\.|$)/i;
+  const paymentRoute = /(?:^|\s)(?:payments?|pay)(?:\s|\.|$)/i;
+  const paymentLabel = /^(?:(?:select|choose)(?: your)? )?payment(?: (?:method|methods|mode|modes|details|options))?$|^review (?:your )?order$/i;
+  const paymentChoice = /^(?:select|choose)(?: (?:a|your))? payment (?:method|mode|option)s?$/i;
+  const payAction = /^(?:pay (?:now|securely|online)|confirm (?:and pay|order))\b|^pay\s+(?:₹|\$|€|£|inr|rs\b)/i;
+  // "Place order" ends checkout on some sites but only leaves the bag on others, so it is a weak payment cue.
+  const placeOrder = /^place (?:my |your )?order\b/i;
   const advanceAction = /\b(?:(?:continue|proceed)\s+to\s+(?:checkout|pay(?:ment)?|select (?:an? )?address)|select delivery options)\b/i;
   const money = String.raw`(?:₹|INR\s*|Rs\.?\s*|\$|€|£)\s*\d[\d,]*(?:\.\d{1,2})?`;
   const amountToAdd = new RegExp(String.raw`\b(?:unlock by adding|add(?:ing)?)\s+(${money})\s+more\b`, "i");
@@ -42,21 +55,23 @@
   const anotherPrice = new RegExp(String.raw`^\s*${money}`, "i");
   const couponThreshold = new RegExp(String.raw`\bshop for\s+(${money})\s+more to apply\b`, "i");
   const couponSaving = new RegExp(String.raw`\bsave\s+(${money})\s+with\s+[A-Z0-9_-]+\b`, "gi");
-  const totalRow = /^(?:order total|grand total|bill total|total payable|amount payable|to pay|total)\s*[:·–—-]?\s*$/i;
-  const subtotalRow = /^(?:sub\s?total|items? total|merchandise total)\s*[:·–—-]?\s*$/i;
+  const totalRow = /^(?:order total|grand total|bill total|total (?:amount )?payable|total amount|net payable|amount (?:payable|to pay)|to pay|you pay|total)\s*[:·–—-]?\s*$/i;
+  const subtotalRow = /^(?:sub\s?total|items? total|merchandise total|total mrp|(?:bag|cart|basket) total)\s*[:·–—-]?\s*$/i;
   const renewalRate = new RegExp(String.raw`\b(?:then|renews? at|charged at)\s+(${money})\s*(?:\/|per )\s*(week|month|year)\b`, "i");
 
   function checkoutStage({ headings, lines, controls, route, hasTotal }) {
     const text = lines.map(item => item.text);
     const actions = controls.map(item => item.text);
     if (headings.some(value => /\b(?:order (?:placed|confirmed)|thank you for your order)\b/i.test(value))) return null;
+    if (paymentRoute.test(route)) return "payment";
+    if (cartRoute.test(route)) return "cart";
     if (headings.some(value => paymentLabel.test(value)) ||
-        text.some(value => /^(?:select|choose)(?: your)? payment (?:method|option)s?$/i.test(value)) ||
+        text.some(value => paymentChoice.test(value)) ||
         actions.some(value => payAction.test(value))) return "payment";
     if (headings.some(value => cartLabel.test(value)) ||
-        /\b(?:cart|basket|bag)\b/i.test(route) ||
-        (hasTotal && (text.some(value => cartLabel.test(value) || /^(?:bill details|bill summary|order summary)$/i.test(value)) ||
+        (hasTotal && (text.some(value => cartLabel.test(value) || /^(?:bill details|bill summary|order summary|price details)\b/i.test(value)) ||
           actions.some(value => advanceAction.test(value))))) return "cart";
+    if (actions.some(value => placeOrder.test(value))) return "payment";
     return null;
   }
 
@@ -124,18 +139,25 @@
         (item.signal === signal && (item.evidence.includes(evidence) || evidence.includes(item.evidence)))));
       if (duplicate >= 0 && findings[duplicate].evidence.length <= evidence.length) return;
       const [title, advice, kind = "review"] = rules[key];
-      const finding = { key, title, advice, kind: key === "rogue" ? "security" : kind, signal, evidence, target: entry.id };
+      const ccpa = rules[key].length === 2;
+      const finding = { key, title, advice, kind: key === "rogue" ? "security" : kind, ccpa, signal, evidence, target: entry.id };
       if (duplicate >= 0) findings[duplicate] = finding;
       else findings.push(finding);
     };
 
-    const feeRows = page.lines.filter(entry => fee.test(entry.text) && prices(entry.text).length <= 1);
+    const feeRows = page.lines.filter(entry => isFee(entry.text) && prices(entry.text).length <= 1);
     if (page.stage === "cart" && (feeRows.length || page.hasTotal)) {
       const subtotal = billAmount(page.lines, subtotalRow);
       const total = billAmount(page.lines, totalRow);
       const amounts = subtotal && total && subtotal.currency === total.currency && subtotal.amount > 0
         ? { subtotal: subtotal.amount, total: total.amount, currency: total.currency } : null;
-      memory.cart = { fees: [...new Set(feeRows.map(entry => feeName(entry.text)))].slice(0, 60), amounts };
+      const fees = [...new Map(feeRows.map(entry => [feeName(entry.text), feeLabel(entry.text)])).entries()].slice(0, 60);
+      memory.cart = {
+        fees: fees.map(([name]) => name),
+        labels: fees.map(([, label]) => label).slice(0, 12),
+        total: total ? formatMoney(total.amount, total.currency) : null,
+        amounts
+      };
     }
     if (page.stage === "payment" && memory.cart) {
       const previous = memory.cart.amounts;
@@ -149,7 +171,7 @@
       }
       for (const entry of feeRows) {
         if (prices(entry.text).some(price => price.amount > 0) && !discount.test(entry.text) && !memory.cart.fees.includes(feeName(entry.text))) {
-          add("drip", "This charge was absent from the cart breakdown captured during this session.", entry);
+          add("drip", `“${feeLabel(entry.text)}” was not in the cart’s price breakdown. It first appeared at payment.`, entry);
         }
       }
     }
@@ -205,14 +227,15 @@
       if (page.stage && /\b(?:refunds? (?:are |will be )?(?:only|solely)|(?:only|solely) (?:receive|get) (?:a )?refund)\b.{0,48}\b(?:store credit|gift card|wallet balance)\b/i.test(text)) {
         add("credit", "The stated refund method is limited to store credit or a similar balance.", entry);
       }
-      if (/\b(?:only\s+\d+\s+(?:left|remaining|in stock)|\d+\s+(?:people|shoppers|users)\s+(?:are )?(?:viewing|looking|watching)|(?:offer|deal|sale|reservation|price|delivery slot)\s+(?:expires|ends|resets|is held)|limited[- ]time offer)\b/i.test(text)) {
-        const clock = text.match(/\b\d{1,2}:\d{2}(?::\d{2})?\b/);
+      if (/\b(?:only\s+(?:\d+|a few|few)\s+(?:items?\s+|units?\s+)?(?:left|remaining|in stock)|\d+\s+(?:people|shoppers|users)\s+(?:are )?(?:viewing|looking|watching)|(?:offer|deal|sale|reservation|price|delivery slot)\s+(?:expires|ends|resets|is held)|limited[- ]time offer|hurry|selling fast|almost gone|last chance)\b/i.test(text) ||
+          /^(?:only\s+)?\d+\s+left(?:\s+in stock)?!?$/i.test(text)) {
+        const clock = text.match(/\b\d{1,2}\s?:\s?\d{2}(?:\s?:\s?\d{2})?\b|\b\d{1,2}h\s*\d{1,2}m(?:\s*\d{1,2}s)?\b/i);
         const evidence = clock ? text.replace(clock[0], "[countdown]") : text;
         let signal = "This message uses scarcity or a deadline to encourage a quick decision.";
         if (clock) {
           memory.timers ??= new Map();
           if (memory.timers.size >= 60 && !memory.timers.has(evidence)) memory.timers.clear();
-          const time = clock[0].split(":").reduce((seconds, part) => seconds * 60 + Number(part), 0);
+          const time = clock[0].match(/\d+/g).reduce((seconds, part) => seconds * 60 + Number(part), 0);
           const previous = memory.timers.get(evidence);
           const restarted = previous?.restarted || (previous?.time <= 2 && time >= 10);
           memory.timers.set(evidence, { time, restarted });
@@ -263,8 +286,9 @@
         add("ad", "A recommendation link has advertising indicators and no visible disclosure was found nearby.", link);
       }
     }
-    const priority = { rogue: 0, upsell: 1, total: 1 };
-    return findings.sort((left, right) => (priority[left.key] ?? 2) - (priority[right.key] ?? 2));
+    // Security first, then money already added to the bill, then everything else in page order.
+    const priority = { rogue: 0, drip: 1, basket: 1, total: 2, upsell: 2 };
+    return findings.sort((left, right) => (priority[left.key] ?? 3) - (priority[right.key] ?? 3));
   }
 
   function formatMoney(amount, currency) {

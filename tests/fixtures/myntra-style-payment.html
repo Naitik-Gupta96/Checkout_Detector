@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payment | Fashion store</title>
+<!-- Synthetic fixture: same bag as the cart fixture, with a convenience fee that first appears here. -->
+<style>
+  body { font: 14px/1.4 Arial, sans-serif; margin: 0; color: #282c3f; }
+  .steps { display: flex; gap: 24px; justify-content: center; padding: 16px; letter-spacing: 3px; font-size: 13px; border-bottom: 1px solid #eaeaec; }
+  .steps .active { color: #20bd99; border-bottom: 2px solid #20bd99; }
+  .wrap { display: flex; gap: 32px; max-width: 980px; margin: 24px auto; }
+  .left { flex: 1; } .right { width: 320px; }
+  .row { display: flex; justify-content: space-between; margin: 10px 0; }
+  .total { display: flex; justify-content: space-between; font-weight: 700; border-top: 1px solid #eaeaec; padding-top: 12px; }
+  .mode { border: 1px solid #eaeaec; padding: 12px; margin-bottom: 8px; }
+  button.pay { width: 100%; background: #ff3f6c; color: #fff; border: 0; padding: 12px; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="steps"><span>BAG</span><span>ADDRESS</span><span class="active">PAYMENT</span></div>
+  <div class="wrap">
+    <div class="left">
+      <div style="font-weight:700">Choose Payment Mode</div>
+      <label class="mode"><input type="radio" name="mode" checked> Cash On Delivery (Cash/UPI)</label>
+      <label class="mode"><input type="radio" name="mode"> UPI (Pay via any App)</label>
+      <label class="mode"><input type="radio" name="mode"> Credit/Debit Card</label>
+    </div>
+    <div class="right">
+      <div>PRICE DETAILS (2 Items)</div>
+      <div class="row"><span>Total MRP</span><span>₹4,998</span></div>
+      <div class="row"><span>Discount on MRP</span><span>-₹3,000</span></div>
+      <div class="row"><span>Platform Fee</span><span>₹20</span></div>
+      <div class="row"><span>Shipping Fee</span><span>FREE</span></div>
+      <div class="row"><span>Gift Packaging</span><span>₹35</span></div>
+      <div class="row"><span>Cash on Delivery Fee</span><span>₹10</span></div>
+      <div class="total"><span>Total Amount</span><span>₹2,063</span></div>
+      <button class="pay">PAY NOW</button>
+    </div>
+  </div>
+</body>
+</html>

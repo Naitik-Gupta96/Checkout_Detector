@@ -1,12 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Checkout Dark Pattern Detector",
-  "version": "1.1.0",
-  "description": "Review possible dark patterns and get practical guidance before you pay.",
+  "version": "1.2.0",
+  "description": "Flags hidden fees, pre-selected add-ons and other CCPA dark patterns before you pay.",
   "permissions": ["activeTab", "scripting", "storage"],
   "background": { "service_worker": "worker.js" },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
     "default_title": "Checkout Dark Pattern Detector",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
   }
 }

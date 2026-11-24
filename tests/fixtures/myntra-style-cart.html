@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bag | Fashion store</title>
+<!-- Synthetic fixture modelled on the layout of a large Indian fashion retailer's bag page.
+     Class names and copy imitate the structure the scanner sees, not any real page. -->
+<style>
+  body { font: 14px/1.4 Arial, sans-serif; margin: 0; color: #282c3f; }
+  .steps { display: flex; gap: 24px; justify-content: center; padding: 16px; letter-spacing: 3px; font-size: 13px; border-bottom: 1px solid #eaeaec; }
+  .steps .active { color: #20bd99; border-bottom: 2px solid #20bd99; }
+  .wrap { display: flex; gap: 32px; max-width: 980px; margin: 24px auto; }
+  .left { flex: 1; } .right { width: 320px; }
+  .item { border: 1px solid #eaeaec; padding: 12px; margin-bottom: 12px; }
+  .row { display: flex; justify-content: space-between; margin: 10px 0; }
+  .total { display: flex; justify-content: space-between; font-weight: 700; border-top: 1px solid #eaeaec; padding-top: 12px; }
+  .chip { border: 1px solid #d4d5d9; border-radius: 16px; padding: 4px 10px; background: #fff; }
+  .left-stock { color: #ff905a; font-weight: 700; font-size: 12px; }
+  button.place { width: 100%; background: #ff3f6c; color: #fff; border: 0; padding: 12px; font-weight: 700; }
+  .strike { text-decoration: line-through; color: #94969f; }
+</style>
+</head>
+<body>
+  <div class="steps"><span class="active">BAG</span><span>ADDRESS</span><span>PAYMENT</span></div>
+  <div class="wrap">
+    <div class="left">
+      <div class="item">
+        <div><b>Roadster</b></div>
+        <div>Men Pure Cotton Casual Shirt</div>
+        <div>Size: M &nbsp; Qty: 1</div>
+        <div><b>₹649</b> <span class="strike">₹1,999</span> <span>67% OFF</span></div>
+        <div class="left-stock">Only 2 left</div>
+      </div>
+      <div class="item">
+        <div><b>HRX by Hrithik Roshan</b></div>
+        <div>Men Running Shoes</div>
+        <div><b>₹1,349</b> <span class="strike">₹2,999</span> <span>55% OFF</span></div>
+        <div>Offer ends in 00:14:59</div>
+      </div>
+      <div class="item">
+        <div>DONATE AND MAKE A DIFFERENCE</div>
+        <button class="chip">₹10</button> <button class="chip">₹20</button> <button class="chip">₹50</button> <button class="chip">₹100</button>
+      </div>
+      <div class="item">
+        <div>Buying for a loved one?</div>
+        <label><input type="checkbox" checked> Gift packaging and personalised message, only for ₹35</label>
+      </div>
+    </div>
+    <div class="right">
+      <div>PRICE DETAILS (2 Items)</div>
+      <div class="row"><span>Total MRP</span><span>₹4,998</span></div>
+      <div class="row"><span>Discount on MRP</span><span>-₹3,000</span></div>
+      <div class="row"><span>Coupon Discount</span><span>Apply Coupon</span></div>
+      <div class="row"><span>Platform Fee <a href="#fee">Know More</a></span><span>₹20</span></div>
+      <div class="row"><span>Shipping Fee <a href="#ship">Know More</a></span><span><span class="strike">₹79</span> FREE</span></div>
+      <div class="row"><span>Gift Packaging</span><span>₹35</span></div>
+      <div class="total"><span>Total Amount</span><span>₹2,053</span></div>
+      <button class="place" onclick="location.href='/checkout/payment'">PLACE ORDER</button>
+    </div>
+  </div>
+</body>
+</html>

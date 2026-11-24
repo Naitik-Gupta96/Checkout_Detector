@@ -12,32 +12,50 @@
 <body>
   <header class="topbar">
     <div id="brand"></div>
-    <span id="site">Chrome</span>
+    <span id="site" title="Current tab"></span>
   </header>
   <main>
-    <section class="status">
-      <span id="state"><span aria-hidden="true"></span><span id="state-label">Standby</span></span>
-      <h2 id="headline" role="status">Check this checkout</h2>
-      <p id="detail">Start from the cart for a comparison with the payment screen.</p>
-      <p id="progress" hidden></p>
-      <button id="toggle" type="button" disabled>Start watching</button>
+    <section class="status" id="status" data-state="idle" aria-labelledby="headline">
+      <p class="state"><span class="dot" aria-hidden="true"></span><span id="state-label">Not watching</span></p>
+      <h1 id="headline">Check before you pay</h1>
+      <p id="detail">Open your cart, then start watching. Each checkout step is compared until payment.</p>
+      <ol class="steps" id="steps" aria-label="Checkout progress" hidden>
+        <li id="step-cart"><span class="marker" aria-hidden="true">1</span><span>Cart</span></li>
+        <li class="rule" aria-hidden="true"></li>
+        <li id="step-payment"><span class="marker" aria-hidden="true">2</span><span>Payment</span></li>
+      </ol>
+      <p id="baseline" hidden></p>
+      <button id="toggle" class="button primary" type="button" disabled>Start watching</button>
     </section>
-    <nav aria-label="Checkout Detector views">
-      <button id="alerts-tab" aria-pressed="true" aria-controls="alerts-view">Alerts <span id="count">0</span></button>
-      <button id="coverage-tab" aria-pressed="false" aria-controls="coverage-view">What we check</button>
-    </nav>
-    <section id="alerts-view" aria-label="Current alerts">
-      <div id="alert-tools" hidden><button id="copy" type="button" class="action">Copy alert summary</button><span id="copy-status" role="status"></span></div>
+
+    <div class="tabs" role="tablist" aria-label="Views">
+      <button id="alerts-tab" role="tab" aria-selected="true" aria-controls="alerts-view">Alerts <span id="count">0</span></button>
+      <button id="coverage-tab" role="tab" aria-selected="false" aria-controls="coverage-view" tabindex="-1">What we check</button>
+    </div>
+
+    <section id="alerts-view" role="tabpanel" aria-labelledby="alerts-tab">
       <div id="findings"></div>
-      <p id="empty">Start watching to see alerts for this tab.</p>
+      <p id="empty" class="empty">Start watching to see alerts for this tab.</p>
+      <div id="alert-tools" hidden>
+        <button id="copy" type="button" class="link quiet">Copy alert summary</button>
+        <span id="copy-status" role="status"></span>
+      </div>
     </section>
-    <section id="coverage-view" hidden aria-label="Detection coverage">
-      <h2>CCPA categories</h2>
-      <ul id="categories"></ul>
+
+    <section id="coverage-view" role="tabpanel" aria-labelledby="coverage-tab" hidden>
+      <h2>The 13 CCPA dark patterns</h2>
+      <p class="hint">Banned by India’s Guidelines for Prevention and Regulation of Dark Patterns, 2023.</p>
+      <ul id="categories" class="chips"></ul>
       <h2>Additional checks</h2>
-      <ul id="additional"></ul>
+      <p class="hint">Common checkout nudges that are legal but cost you money.</p>
+      <ul id="additional" class="chips"></ul>
+      <div class="diagnostics">
+        <p><strong>Missing something on a real site?</strong> Copy what the detector read on this tab and share it with the project team. It includes visible page text, so check it first.</p>
+        <button id="diagnostics" type="button" class="button" disabled>Copy page diagnostics</button>
+        <span id="diagnostics-status" role="status"></span>
+      </div>
     </section>
   </main>
-  <footer>Scans this tab. Evidence stays on your device.</footer>
+  <footer>Runs only on this tab, on your device. Nothing is sent anywhere.</footer>
 </body>
 </html>

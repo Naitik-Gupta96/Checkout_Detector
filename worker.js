@@ -64,10 +64,12 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       await stop(sender.tab.id);
       return { ok: true };
     }
-    if (message.type === "load") return { active: true, cart: session.cart };
+    if (message.type === "load") return { active: true, cart: session.cart, dismissed: session.dismissed };
     if (message.type === "update") {
-      if (message.cart) await chrome.storage.session.set({ [key]: { ...session, cart: message.cart } });
-      await chrome.action.setBadgeBackgroundColor({ tabId: sender.tab.id, color: message.count ? "#a75222" : "#285342" });
+      const dismissed = Array.isArray(message.dismissed) ? message.dismissed.slice(0, 200) : session.dismissed;
+      await chrome.storage.session.set({ [key]: { ...session, cart: message.cart || session.cart, dismissed } });
+      await chrome.action.setBadgeBackgroundColor({ tabId: sender.tab.id, color: message.count ? "#b4530f" : "#6f45ed" });
+      await chrome.action.setBadgeTextColor?.({ tabId: sender.tab.id, color: "#ffffff" });
       await badge(sender.tab.id, message.count > 99 ? "99+" : message.count ? String(message.count) : "•");
       return { active: true };
     }

@@ -5,6 +5,7 @@
   const memory = {};
   const prompts = new Map();
   const choices = new Set();
+  let dismissed = new Set();
   let targets = new Map();
   let result = { active: true, loading: true };
   let scheduled;
@@ -12,6 +13,7 @@
   let lastUpdate;
   let stopped = false;
   let interval;
+  let observer;
   let donationCard;
   let clickedUncheckedDonation = false;
   let donationIncluded = false;
@@ -174,7 +176,7 @@
     const stage = CheckoutRules.checkoutStage({ headings, lines, controls, route, hasTotal }) || (drawer ? "cart" : null);
     const donation = billedDonation(drawer, lines, entry);
     if (donation) controls.unshift(donation);
-    return { lines, controls, dialogs, links, stage, hasTotal };
+    return { lines, controls, dialogs, links, headings, stage, hasTotal };
   }
 
   function promptKey(element) {
@@ -203,14 +205,20 @@
     queueScan();
   }
 
+  const findingId = item => `${item.key}|${item.evidence}`;
+  let lastPage;
+  let lastScan = 0;
+
   function scan() {
     scheduled = undefined;
     if (stopped) return;
-    const page = snapshot();
-    const findings = CheckoutRules.detect(page, memory);
-    result = { active: true, stage: page.stage, findings, hasCart: Boolean(memory.cart) };
+    lastScan = Date.now();
+    const page = lastPage = snapshot();
+    const findings = CheckoutRules.detect(page, memory).filter(item => !dismissed.has(findingId(item)));
+    const baseline = memory.cart ? { labels: memory.cart.labels || [], total: memory.cart.total || null } : null;
+    result = { active: true, stage: page.stage, findings, hasCart: Boolean(memory.cart), baseline, dismissed: dismissed.size };
     renderNotice(result);
-    const update = JSON.stringify({ cart: memory.cart, count: findings.length });
+    const update = JSON.stringify({ cart: memory.cart, count: findings.length, dismissed: [...dismissed] });
     if (update !== lastUpdate) {
       lastUpdate = update;
       chrome.runtime.sendMessage({ type: "update", ...JSON.parse(update) }).then(response => {
@@ -219,8 +227,23 @@
     }
   }
 
+  function dismiss(item) {
+    if (dismissed.size < 200) dismissed.add(findingId(item));
+    scan();
+  }
+
+  function emptyMessage({ stage, hasCart, baseline }) {
+    if (stage === "payment" && !hasCart) return "Open the cart first so fees added at payment can be compared.";
+    if (stage === "payment") return "No new fees since the cart. Check the total and selected options before paying.";
+    if (stage === "cart") {
+      const fees = baseline?.labels.length ? ` Fees noted: ${baseline.labels.join(", ")}.` : "";
+      return `Cart recorded.${fees} Nothing to flag yet.`;
+    }
+    return "Nothing to flag on this page.";
+  }
+
   function renderNotice(status) {
-    const { findings, stage, hasCart } = status;
+    const { findings, stage } = status;
     if (findings.length && !previousCount) noticeOpen = true;
     previousCount = findings.length;
     if (!noticeOpen && !findings.length && !stage) {
@@ -233,42 +256,45 @@
       noticeKey = undefined;
     }
     const { box, summary, toggle, list, footer } = notice;
-    box.dataset.open = String(noticeOpen);
-    list.hidden = footer.hidden = !noticeOpen;
-    toggle.textContent = noticeOpen ? "−" : "+";
-    toggle.setAttribute("aria-label", noticeOpen ? "Minimize checkout alerts" : "Expand checkout alerts");
-    toggle.setAttribute("aria-expanded", noticeOpen);
-    const phase = stage === "payment" ? "Payment" : stage === "cart" ? "Cart" : "Page";
-    const summaryText = findings.length ? `${findings.length} to review · ${phase}` : `Watching · ${phase}`;
+    if (box.dataset.open !== String(noticeOpen)) {
+      box.dataset.open = String(noticeOpen);
+      list.hidden = footer.hidden = !noticeOpen;
+      toggle.replaceChildren(CheckoutUI.icon(noticeOpen ? "chevronDown" : "chevronUp"));
+      toggle.setAttribute("aria-label", noticeOpen ? "Minimize checkout alerts" : "Expand checkout alerts");
+      toggle.setAttribute("aria-expanded", noticeOpen);
+    }
+    const step = stage === "payment" ? " · Payment" : stage === "cart" ? " · Cart" : "";
+    const summaryText = findings.length ? `${findings.length} to review${step}` : `Watching${step}`;
     if (summary.textContent !== summaryText) summary.textContent = summaryText;
     summary.dataset.alert = String(findings.length > 0);
-    const key = JSON.stringify([findings.map(({ key, evidence, signal }) => [key, evidence, signal]), stage, hasCart]);
+    const key = JSON.stringify([findings.map(({ key, evidence, signal }) => [key, evidence, signal]), emptyMessage(status)]);
     if (key === noticeKey) return;
     noticeKey = key;
     const scroll = list.scrollTop;
-    list.replaceChildren(...findings.map(item => CheckoutUI.finding(item, finding => {
-      const shown = revealFinding(finding);
-      if (shown) {
-        noticeOpen = false;
-        renderNotice(result);
-        toggle.focus({ preventScroll: true });
-      }
-      return shown;
+    list.replaceChildren(...findings.map(item => CheckoutUI.finding(item, {
+      reveal: finding => {
+        const shown = revealFinding(finding);
+        if (shown) {
+          noticeOpen = false;
+          renderNotice(result);
+          toggle.focus({ preventScroll: true });
+        }
+        return shown;
+      },
+      dismiss
     })));
-    if (!findings.length) {
-      const message = stage === "payment" && !hasCart ? "Open the cart first to compare fees." : "No supported signals on this screen.";
-      list.append(CheckoutUI.element("p", message, "empty"));
-    }
+    if (!findings.length) list.append(CheckoutUI.element("p", emptyMessage(status), "empty"));
     list.scrollTop = scroll;
   }
 
   function createNotice() {
     const { brand, element, style } = CheckoutUI;
     const host = element("div");
+    host.dataset.checkoutDetector = "panel";
     host.style.cssText = "all:initial;position:fixed;bottom:16px;left:16px;max-width:calc(100vw - 32px);z-index:2147483646";
     const shadow = host.attachShadow({ mode: "closed" });
     const box = element("section", undefined, "dock");
-    box.setAttribute("aria-label", "Checkout Detector on-page alerts");
+    box.setAttribute("aria-label", "Checkout Detector alerts");
     const header = element("header");
     const heading = brand();
     const summary = element("p", undefined, "summary");
@@ -293,7 +319,7 @@
     list.id = "checkout-detector-findings";
     toggle.setAttribute("aria-controls", list.id);
     const footer = element("footer");
-    const stop = element("button", "Stop watching", "action");
+    const stop = element("button", "Stop watching", "button");
     stop.type = "button";
     stop.addEventListener("click", async () => {
       stop.disabled = true;
@@ -303,27 +329,31 @@
         stop.disabled = false;
       }
     });
-    footer.append(stop);
+    footer.append(element("small", "Checks this tab on your device"), stop);
     box.append(header, list, footer);
     shadow.append(style(`
-      .dock { width: min(264px, calc(100vw - 32px)); overflow: hidden; color: var(--ink);
-        color-scheme: dark; font: 13px/1.5 system-ui, "Segoe UI", sans-serif;
-        border: 1px solid #416052; border-radius: 13px; background: var(--base);
-        box-shadow: 0 10px 30px #0009; }
-      .dock[data-open="true"] { width: min(384px, calc(100vw - 32px)); }
-      header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
-        gap: 10px; background: linear-gradient(120deg, #1b302c, #152431 72%); }
-      .summary { color: var(--lime); font-size: 11px; font-weight: 600; }
-      .summary[data-alert="true"] { color: var(--amber); }
-      .list { max-height: min(380px, max(100px, 100vh - 145px)); overflow: auto; overscroll-behavior: contain;
-        display: grid; gap: 8px; padding: 10px; scrollbar-color: #506778 var(--base); scrollbar-width: thin; }
+      .dock { width: min(280px, calc(100vw - 32px)); overflow: hidden; color: var(--ink);
+        font: 13px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+        border: 1px solid var(--line-strong); border-radius: 12px; background: var(--paper);
+        box-shadow: 0 1px 2px rgb(21 36 59 / .08), 0 14px 36px rgb(21 36 59 / .2); }
+      .dock[data-open="true"] { width: min(380px, calc(100vw - 32px)); }
+      header { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        padding: 9px 9px 9px 11px; background: var(--card); }
+      .dock[data-open="true"] header { border-bottom: 1px solid var(--line); }
+      .brand strong { font-size: 13px; line-height: 1.25; }
+      .summary { color: var(--ink-2); font-size: 12px; line-height: 1.3; }
+      .summary[data-alert="true"] { color: var(--amber); font-weight: 650; }
+      .list { max-height: min(400px, max(120px, 100vh - 160px)); overflow: auto; overscroll-behavior: contain;
+        display: grid; gap: 8px; padding: 10px; scrollbar-width: thin; }
       .list[hidden], footer[hidden] { display: none; }
-      .empty { color: var(--muted); padding: 4px; }
-      footer { padding: 7px 10px; border-top: 1px solid var(--stroke); }
-      footer button { font-size: 12px; }
+      .empty { color: var(--ink-2); padding: 2px; }
+      footer { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        padding: 8px 10px 8px 12px; border-top: 1px solid var(--line); background: var(--card); }
+      footer small { color: var(--ink-3); font-size: 11.5px; }
+      footer .button { min-height: 28px; font-size: 12px; }
       @media (max-width: 760px) {
-        .dock[data-open="true"] { width: min(324px, calc(100vw - 32px)); }
-        .list { max-height: min(310px, max(100px, 100vh - 145px)); }
+        .dock[data-open="true"] { width: min(330px, calc(100vw - 32px)); }
+        .list { max-height: min(320px, max(120px, 100vh - 160px)); }
       }
     `), box);
     document.body.append(host);
@@ -335,8 +365,18 @@
     return Boolean(current && show(current.target));
   }
 
+  // Rescans are driven by page changes, throttled so busy pages (carousels, countdowns) cost at most ~1 scan a second.
   function queueScan() {
-    scheduled ??= setTimeout(scan, 250);
+    scheduled ??= setTimeout(scan, Math.max(300, 900 - (Date.now() - lastScan)));
+  }
+
+  const ours = node => node.nodeType === Node.ELEMENT_NODE && node.hasAttribute("data-checkout-detector");
+  function pageChanged(records) {
+    return records.some(record => {
+      if (record.target.nodeType === Node.ELEMENT_NODE && record.target.closest("[data-checkout-detector]")) return false;
+      const nodes = [...record.addedNodes, ...record.removedNodes];
+      return !nodes.length || !nodes.every(ours);
+    });
   }
 
   function show(target) {
@@ -346,17 +386,34 @@
     element.scrollIntoView({ block: "center", behavior: "instant" });
     const rect = element.getBoundingClientRect();
     outline = document.createElement("div");
-    outline.style.cssText = `position:fixed;pointer-events:none;z-index:2147483647;border:3px solid #ef831e;border-radius:6px;box-sizing:border-box;left:${rect.left - 3}px;top:${rect.top - 3}px;width:${rect.width + 6}px;height:${rect.height + 6}px`;
+    outline.dataset.checkoutDetector = "highlight";
+    outline.style.cssText = `position:fixed;pointer-events:none;z-index:2147483647;border:3px solid #c65b18;border-radius:6px;box-shadow:0 0 0 4px rgb(198 91 24 / .22);box-sizing:border-box;left:${rect.left - 4}px;top:${rect.top - 4}px;width:${rect.width + 8}px;height:${rect.height + 8}px`;
     document.body.append(outline);
     const marker = outline;
-    setTimeout(() => marker.remove(), 2400);
+    setTimeout(() => marker.remove(), 2600);
     return true;
+  }
+
+  // A copyable summary of what the scanner read, for checking why a site is or isn't flagged.
+  function diagnostics() {
+    const page = lastPage || snapshot();
+    return {
+      extension: chrome.runtime.getManifest().version,
+      page: location.hostname + location.pathname,
+      stage: page.stage, hasTotal: page.hasTotal, cart: memory.cart || null,
+      findings: result.findings?.map(({ key, evidence }) => [key, evidence]) || [],
+      headings: page.headings,
+      lines: page.lines.slice(0, 250).map(item => item.text),
+      controls: page.controls.slice(0, 120).map(({ text, selected, chosen }) => ({ text, selected, chosen })),
+      dialogs: page.dialogs.map(item => item.text)
+    };
   }
 
   function dispose() {
     stopped = true;
     clearTimeout(scheduled);
     clearInterval(interval);
+    observer?.disconnect();
     outline?.remove();
     notice?.host.remove();
     document.removeEventListener("click", onClick, true);
@@ -369,6 +426,11 @@
     if (message.type === "show") {
       reply({ shown: revealFinding(message) });
     }
+    if (message.type === "dismiss") {
+      dismiss(message);
+      reply({ ok: true });
+    }
+    if (message.type === "diagnostics") reply(diagnostics());
     if (message.type === "dispose") {
       dispose();
       reply({ ok: true });
@@ -380,8 +442,12 @@
     if (stopped) return;
     if (!response?.active) return dispose();
     memory.cart = response.cart;
+    dismissed = new Set(response.dismissed || []);
     document.addEventListener("click", onClick, true);
-    interval = setInterval(queueScan, 1000);
+    observer = new MutationObserver(records => { if (pageChanged(records)) queueScan(); });
+    observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true });
+    // Safety net for changes that produce no mutation, such as a layout-only visibility change.
+    interval = setInterval(queueScan, 4000);
     scan();
   }).catch(dispose);
 })();

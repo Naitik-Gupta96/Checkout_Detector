@@ -173,3 +173,49 @@ test("Coupon upsells compare the required spend with the advertised savings", ()
   assert.equal(result[0].key, "couponUpsell");
   assert.equal(result[0].signal, "You’d spend ₹1,099 more overall if the ₹50 coupon applies.");
 });
+
+test("A bag page whose next button says Place order is still the cart", () => {
+  const bag = { headings: [], lines: [item("PRICE DETAILS (2 Items)")], controls: [item("PLACE ORDER")], hasTotal: true };
+  assert.equal(checkoutStage({ ...bag, route: " checkout cart" }), "cart");
+  assert.equal(checkoutStage({ ...bag, route: " checkout" }), "cart");
+  assert.equal(checkoutStage({ ...bag, route: " checkout payment" }), "payment");
+  assert.equal(checkoutStage({ headings: [], lines: [], controls: [item("Place your order")], route: " checkout", hasTotal: true }), "payment");
+  assert.equal(checkoutStage({ headings: [], lines: [], controls: [], route: " shop bags handbags", hasTotal: false }), null);
+});
+
+test("Fee rows are recognised by label, and a fee first shown at payment is drip pricing", () => {
+  const memory = {};
+  detect(page({ lines: [
+    item("Total MRP ₹4,998"), item("Platform Fee Know More ₹20"), item("Shipping Fee Know More ₹79 FREE"), item("Total Amount ₹2,053")
+  ] }), memory);
+  assert.deepEqual(memory.cart.labels, ["Platform Fee", "Shipping Fee"]);
+  assert.equal(memory.cart.total, "₹2,053");
+  const result = detect(page({ stage: "payment", lines: [
+    item("Total MRP ₹4,998"), item("Platform Fee ₹20"), item("Shipping Fee FREE"),
+    item("Cash on Delivery Fee ₹10"), item("Delivery fee discount ₹30"), item("Total Amount ₹2,063")
+  ] }), memory);
+  assert.deepEqual(result.map(item => [item.key, item.evidence]), [
+    ["drip", "Cash on Delivery Fee ₹10"], ["total", "Total Amount ₹2,063"]
+  ]);
+  assert.match(result[0].signal, /Cash on Delivery Fee/);
+});
+
+test("A pre-ticked gift packaging or express delivery option counts as basket sneaking", () => {
+  for (const text of ["Gift packaging and personalised message, only for ₹35", "Express delivery ₹49"]) {
+    assert.equal(detect(page({ controls: [item(text, { selected: true })] }), {})[0]?.key, "basket", text);
+  }
+});
+
+test("Urgency copy and countdown formats used by retail sites are recognised", () => {
+  for (const text of ["2 left", "Only a few left in stock", "Hurry, selling fast", "Deal ends in 02h 15m 30s"]) {
+    assert.equal(detect(page({ lines: [item(text)] }), {})[0]?.key, "urgency", text);
+  }
+  assert.deepEqual(detect(page({ lines: [item("₹10 left to unlock rewards")] }), {}), []);
+});
+
+test("Findings are tagged as CCPA categories or additional checks", () => {
+  const [drip] = detect(page({ lines: [item("Only 2 left")] }), {});
+  assert.equal(drip.ccpa, true);
+  const [consent] = detect(page({ controls: [item("Send me marketing emails", { selected: true, toggleable: true })] }), {});
+  assert.equal(consent.ccpa, false);
+});
