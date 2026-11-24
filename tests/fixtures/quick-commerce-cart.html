@@ -303,21 +303,42 @@
       <div class="row"><span>Delivery charge <span>ⓘ</span></span><span><span class="strike">₹30</span>₹25</span></div>
       <div class="row"><span>Handling charge <span>ⓘ</span></span><span>₹11</span></div>
       <div class="row"><span>Small cart charge <span>ⓘ</span></span><span>₹20</span></div>
-      <div class="row"><span>Tip for delivery partner</span><span>₹20</span></div>
-      <div class="row"><span>Feeding India donation</span><span>₹1</span></div>
-      <div class="row"><b>Grand total</b><b>₹157</b></div>
+      <div class="row" id="tip-row"><span>Tip for delivery partner</span><span id="tip-amount">₹20</span></div>
+      <div class="row" id="donation-row"><span>Feeding India donation</span><span>₹1</span></div>
+      <div class="row"><b>Grand total</b><b id="grand-total">₹157</b></div>
     </div>
     <div class="card">
-      <div class="row"><span>Feeding India donation ₹1</span><input type="checkbox" checked aria-label="Feeding India donation"></div>
+      <div class="row"><span>Feeding India donation ₹1</span><input type="checkbox" id="donation" checked aria-label="Feeding India donation"></div>
       <div>Working towards a malnutrition free India. Feeding India...read more</div>
     </div>
     <div class="card">
       <div><b>Tip your delivery partner</b></div>
       <div>Your kindness means a lot! 100% of your tip will go directly to your delivery partner.</div>
-      <div><div class="chip selected">₹20</div> <div class="chip">₹30</div> <div class="chip">₹50</div> <div class="chip">Custom</div></div>
+      <div><div class="chip selected" data-tip="20">₹20</div> <div class="chip" data-tip="30">₹30</div> <div class="chip" data-tip="50">₹50</div> <div class="chip">Custom</div></div>
     </div>
     <div class="card"><b>Cancellation Policy</b><div>Orders cannot be cancelled once packed for delivery.</div></div>
     <div class="footer"><span>₹157 TOTAL</span><span>Login to Proceed ›</span></div>
   </div>
+  <script>
+    // Mirrors a live cart: the donation checkbox and tip chips add or remove their bill rows.
+    const base = 136;
+    const update = () => {
+      const tip = Number(document.querySelector(".chip.selected")?.dataset.tip || 0);
+      const donation = document.querySelector("#donation").checked ? 1 : 0;
+      document.querySelector("#tip-row").hidden = !tip;
+      document.querySelector("#tip-amount").textContent = `₹${tip}`;
+      document.querySelector("#donation-row").hidden = !donation;
+      document.querySelector("#grand-total").textContent = `₹${base + tip + donation}`;
+    };
+    document.querySelector("#donation").addEventListener("change", update);
+    for (const chip of document.querySelectorAll(".chip[data-tip]")) {
+      chip.addEventListener("click", () => {
+        const wasSelected = chip.classList.contains("selected");
+        document.querySelectorAll(".chip").forEach(other => other.classList.remove("selected"));
+        if (!wasSelected) chip.classList.add("selected");
+        update();
+      });
+    }
+  </script>
 </body>
 </html>

@@ -189,8 +189,9 @@
   function detect(page, memory) {
     const findings = [];
     const add = (key, signal, entry, evidence = entry.text) => {
-      const duplicate = findings.findIndex(item => item.key === key && (item.evidence === evidence ||
-        (item.signal === signal && (item.evidence.includes(evidence) || evidence.includes(item.evidence)))));
+      // Container elements repeat their children's text, so keep the most specific line as evidence.
+      const duplicate = findings.findIndex(item => item.key === key &&
+        (item.evidence.includes(evidence) || evidence.includes(item.evidence)));
       if (duplicate >= 0 && findings[duplicate].evidence.length <= evidence.length) return;
       const [title, advice, kind = "review"] = rules[key];
       const ccpa = rules[key].length === 2;
@@ -199,7 +200,10 @@
       else findings.push(finding);
     };
 
-    const feeRows = page.lines.filter(entry => isFee(entry.text) && prices(entry.text).length <= 2);
+    // When the page has a recognisable bill, only its rows count as charges or extras.
+    const billLine = entry => !page.hasBill || entry.inBill;
+    const touched = new Set(page.touched || []);
+    const feeRows = page.lines.filter(entry => billLine(entry) && isFee(entry.text) && prices(entry.text).length <= 2);
     if (page.stage === "cart" && (feeRows.length || page.hasTotal)) {
       const subtotal = billAmount(page.lines, subtotalRow);
       const total = billAmount(page.lines, totalRow);
@@ -217,8 +221,13 @@
       const previous = memory.cart.amounts;
       const current = billAmount(page.lines, totalRow);
       const subtotal = billAmount(page.lines, subtotalRow);
+      const chosenExtras = page.lines.reduce((sum, entry) => {
+        const extraLine = billLine(entry) && billedExtra(entry.text);
+        return extraLine && extraLine.topics.some(topic => touched.has(topic)) ? sum + prices(entry.text)[0].amount : sum;
+      }, 0);
       if (previous && current && subtotal?.amount === previous.subtotal &&
-          current.currency === previous.currency && subtotal.currency === current.currency && current.amount > previous.total) {
+          current.currency === previous.currency && subtotal.currency === current.currency &&
+          current.amount > previous.total + chosenExtras + 0.5) {
         const before = formatMoney(previous.total, current.currency);
         const after = formatMoney(current.amount, current.currency);
         add("total", `Your displayed total rose from ${before} to ${after} while the displayed subtotal stayed the same.`, current.entry);
@@ -274,11 +283,9 @@
 
     for (const control of page.controls) {
       const { text, context = text } = control;
-      if (page.stage && control.selected && !control.chosen && extra.test(text) && prices(text).some(price => price.amount > 0)) {
-        const signal = control.billed
-          ? "This paid extra was already included in the bill when the extension observed it. Check the donation toggle in your cart."
-          : "A paid extra was already selected when the extension first observed it.";
-        add("basket", signal, control);
+      const picked = control.chosen || topics(text).some(topic => touched.has(topic));
+      if (page.stage && control.selected && !picked && extra.test(text) && prices(text).some(price => price.amount > 0)) {
+        add("basket", "A paid extra was already selected when the extension first observed it.", control);
       }
       if (control.toggleable && control.selected && !control.chosen &&
           /\b(?:marketing (?:emails?|messages|communications|updates)|promotional (?:emails?|messages|communications|offers)|newsletter|personali[sz]ed ads?|allow tracking|(?:offers?|promotions?|deals?) (?:on|via) (?:whatsapp|sms)|whatsapp (?:offers|promotions|marketing))\b/i.test(text) &&
@@ -303,10 +310,10 @@
       }
     }
 
-    const touched = new Set(page.touched || []);
     for (const entry of page.lines) {
       const text = entry.text;
-      const billed = page.stage && billedExtra(text);
+      // A priced extra next to an unticked box is an offer, not a charge.
+      const billed = page.stage && billLine(entry) && entry.toggle !== false && billedExtra(text);
       if (billed && !billed.topics.some(topic => touched.has(topic)) &&
           !findings.some(item => item.key === "basket" && topics(item.evidence).some(topic => billed.topics.includes(topic)))) {
         add("basket", `${billed.amount} for “${billed.label}” is already in your bill, and you haven’t selected it during this watch.`, entry);
@@ -314,7 +321,7 @@
       if (page.stage && !touched.has("coupon") && !findings.some(item => item.key === "autoCoupon") && appliedCoupon(text)) {
         add("autoCoupon", "A coupon is applied, but you haven’t opened or applied one during this watch.", entry);
       }
-      if (page.stage && text.length < 220 && membershipOffer.test(text) && !findings.some(item => item.key === "membershipUpsell")) {
+      if (page.stage && text.length < 220 && membershipOffer.test(text)) {
         const save = text.match(saveAmount);
         const [cost] = prices(save ? text.replace(save[0], "") : text);
         const [saving] = save ? prices(save[1]) : [];

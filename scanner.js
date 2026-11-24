@@ -14,9 +14,6 @@
   let stopped = false;
   let interval;
   let observer;
-  let donationCard;
-  let clickedUncheckedDonation = false;
-  let donationIncluded = false;
   let notice;
   let noticeKey;
   let noticeOpen = false;
@@ -34,7 +31,6 @@
   const currency = /₹|\bINR\s*\d|\bRs\.?\s*\d|[$€£]\s*\d/i;
   const lineSelector = "main *,[role=main] *,h1,h2,h3,h4,h5,h6,b,strong,p,li,td,dt,dd,label,span,div,section,article,aside";
   const onBlinkit = /(?:^|\.)blinkit\.com$/i.test(location.hostname);
-  const donationChoice = "feeding india donation";
 
   function cartDrawer() {
     const headings = [...document.querySelectorAll("h1,h2,h3,div,span,p,[role=heading]")];
@@ -51,11 +47,26 @@
   // Bill summaries and open dialogs are read first, so a cart drawer placed after a long product grid
   // is not cut off by the line limit.
   const billHeading = /^(?:bill (?:details|summary)|price details(?: \(\d+ items?\))?|order summary|payment (?:details|summary)|my cart|your cart)$/i;
+  const totalWords = /\b(?:grand total|total amount|to pay|order total|total payable|amount payable|bill total|net payable)\b/i;
   function checkoutScopes(drawer) {
-    const scopes = drawer ? [drawer] : [];
-    for (const dialog of document.querySelectorAll(modal)) if (available(dialog)) scopes.push(dialog);
     const markers = [...document.querySelectorAll("h1,h2,h3,h4,b,strong,span,div,p")].filter(element =>
-      element.childElementCount <= 1 && billHeading.test(normalize(element.textContent)) && available(element)).slice(0, 4);
+      element.childElementCount <= 1 && billHeading.test(normalize(element.textContent)) && available(element)).slice(0, 6);
+    // The bill is the smallest block around a bill heading that also holds the total. Only its rows count as
+    // charges, so an offer card that repeats "Donation ₹1" next to an unticked box is not mistaken for a bill line.
+    const bills = [];
+    for (const marker of markers) {
+      if (/^(?:my|your) cart$/i.test(normalize(marker.textContent))) continue;
+      for (let node = marker.parentElement, depth = 0; node && node !== document.body && depth < 8; node = node.parentElement, depth++) {
+        const text = normalize(node.innerText);
+        if (text.length > 2500) break;
+        if (totalWords.test(text)) {
+          if (!bills.some(bill => bill.contains(node) || node.contains(bill))) bills.push(node);
+          break;
+        }
+      }
+    }
+    const scopes = [...bills, ...(drawer ? [drawer] : [])];
+    for (const dialog of document.querySelectorAll(modal)) if (available(dialog)) scopes.push(dialog);
     for (const marker of markers) {
       // Widen to the largest ancestor that still reads like one panel rather than the whole page.
       let scope = marker;
@@ -63,37 +74,18 @@
         normalize(scope.parentElement.innerText).length < 4000) scope = scope.parentElement;
       if (!scopes.some(existing => existing.contains(scope))) scopes.push(scope);
     }
-    return scopes;
+    return { scopes, bills };
   }
 
-  function billedDonation(scope, lines, entry) {
-    const name = /^feeding india donation(?=\s|₹|$)/i;
-    const row = /^feeding india donation\s*(₹\s*\d+(?:\.\d{1,2})?)$/i;
-    donationCard = undefined;
-    if (!onBlinkit || !scope) return null;
-
-    let charge;
-    for (const line of lines) {
-      const element = targets.get(line.id);
-      if (!scope.contains(element) || !name.test(line.text)) continue;
-      if (row.test(line.text)) charge ??= line;
-      if (!donationCard && /working towards|read more/i.test(line.text) && currency.test(line.text)) {
-        donationCard = element;
-      }
+  // The state of a checkbox or switch sitting in the same small block as a priced line, if there is one.
+  const toggleSelector = 'input[type="checkbox"],[role="checkbox"],[role="switch"],[aria-checked],[aria-pressed]';
+  function nearbyToggle(element) {
+    for (let node = element, depth = 0; node && node !== document.body && depth < 3; node = node.parentElement, depth++) {
+      if (normalize(node.innerText).length > 200) break;
+      const toggle = node.matches(toggleSelector) ? node : node.querySelector(toggleSelector);
+      if (toggle) return selected(toggle);
     }
-    donationIncluded = Boolean(charge);
-    if (donationIncluded && clickedUncheckedDonation) {
-      choices.add(donationChoice);
-      clickedUncheckedDonation = false;
-    }
-    if (!charge) return null;
-    const amount = charge.text.match(row)[1].replace(/\s+/g, "");
-    return {
-      ...entry(donationCard || targets.get(charge.id), `Feeding India donation ${amount}`),
-      selected: true,
-      chosen: choices.has(donationChoice),
-      billed: true
-    };
+    return undefined;
   }
 
   function controlText(element) {
@@ -101,7 +93,7 @@
     const direct = normalize(labels) || label(element);
     if (/^(?:₹|\$|€|£)\s*\d/.test(direct)) {
       const context = normalize(element.parentElement?.parentElement?.innerText);
-      if (/\b(?:rider|driver)\b/i.test(context) && /\b(?:tip|thank)\b/i.test(context)) return `Rider tip ${direct}`;
+      if (/\b(?:rider|driver|delivery (?:partner|executive|agent)|valet)\b/i.test(context) && /\b(?:tip|thank)\b/i.test(context)) return `Delivery tip ${direct}`;
       if (/\bdonat(?:e|ion)\b/i.test(context) && context.length < 400) return `Donation ${direct}`;
     }
     return direct;
@@ -111,16 +103,23 @@
     return element.checked === true ||
       ["aria-checked", "aria-pressed", "aria-selected"].some(name => element.getAttribute(name) === "true") ||
       (currency.test(label(element)) && element.classList.contains("chip") && element.classList.contains("on")) ||
-      // Custom chips and checkboxes often mark selection only with a class such as "chip-selected" or "isChecked".
-      /(?:^|[\s_-])(?:is-?)?(?:selected|checked)(?:$|[\s_-])|[a-z](?:Selected|Checked)\b/.test(element.className?.baseVal ?? element.className ?? "");
+      selectedClass(element);
+  }
+
+  // Custom chips and checkboxes often mark selection only with a class such as "chip-selected" or "isChecked".
+  function selectedClass(element) {
+    const classes = String(element.className?.baseVal ?? element.className ?? "").split(/\s+/);
+    return classes.some(name => /(?:^|[-_])(?:is-?)?(?:selected|checked)$|^(?:is|has)?(?:Selected|Checked)$|[a-z](?:Selected|Checked)$/.test(name) &&
+      !/(?:^|[-_])(?:not|un|de)-?(?:selected|checked)$|(?:Not|Un)(?:Selected|Checked)$|^un(?:selected|checked)$/i.test(name));
   }
 
   // Remembers what the shopper interacted with (donation, coupon, tip...) by reading the clicked area's short label.
   function recordTouch(target) {
     let node = target;
-    for (let depth = 0; node && node !== document.body && depth < 4; depth++, node = node.parentElement) {
+    for (let depth = 0; node && node !== document.body && depth < 6; depth++, node = node.parentElement) {
       const text = normalize(node.innerText);
-      if (text.length > 160) break;
+      if (text.length > 600) break;
+      if (text.length > 300) continue;
       for (const topic of CheckoutRules.topics(text)) if (memory.touched.size < 40) memory.touched.add(topic);
     }
   }
@@ -128,7 +127,7 @@
   function snapshot() {
     targets = new Map();
     const drawer = onBlinkit ? cartDrawer() : null;
-    const scopes = checkoutScopes(drawer);
+    const { scopes, bills } = checkoutScopes(drawer);
     const prioritized = selector => new Set([
       ...scopes.flatMap(scope => [...scope.querySelectorAll(selector)]), ...document.querySelectorAll(selector)
     ]);
@@ -154,13 +153,21 @@
     const seen = new Set();
     for (const element of prioritized(lineSelector)) {
       const text = normalize(element.textContent);
-      if (!text || text.length > 260 || seen.has(text) || !available(element)) continue;
+      // The same words can appear in the bill and on an offer card, so the bill copy is kept separately.
+      const inBill = bills.some(bill => bill.contains(element));
+      const key = value => (inBill ? "bill:" : "") + value;
+      if (!text || text.length > 260 || seen.has(key(text)) || !available(element)) continue;
       const visibleText = normalize(element.innerText);
-      if (visibleText.length < 4 || visibleText.length > 260 || seen.has(visibleText)) continue;
+      if (visibleText.length < 4 || visibleText.length > 260 || seen.has(key(visibleText))) continue;
       if (element.children.length > 4) continue;
       if ([...element.children].some(child => normalize(child.innerText) === visibleText)) continue;
-      seen.add(visibleText);
+      seen.add(key(visibleText));
       const line = entry(element, visibleText);
+      line.inBill = inBill;
+      if (visibleText.length <= 80 && currency.test(visibleText)) {
+        const toggle = nearbyToggle(element);
+        if (toggle !== undefined) line.toggle = toggle;
+      }
       if (/\b(?:unlock by adding|add(?:ing)?|shop for)\s+(?:₹|INR|Rs\.?|\$|€|£)/i.test(visibleText)) {
         line.nearby = [];
         let parent = element.parentElement;
@@ -206,9 +213,7 @@
     const route = location.pathname.replace(/[-_/]/g, " ");
     const hasTotal = lines.some(item => /^(?:order total|grand total|bill total|total payable|to pay|amount payable|total)(?:\s|:|₹|\$|€|£)/i.test(item.text) && currency.test(item.text));
     const stage = CheckoutRules.checkoutStage({ headings, lines, controls, route, hasTotal }) || (drawer ? "cart" : null);
-    const donation = billedDonation(drawer, lines, entry);
-    if (donation) controls.unshift(donation);
-    return { lines, controls, dialogs, links, headings, stage, hasTotal, touched: [...memory.touched] };
+    return { lines, controls, dialogs, links, headings, stage, hasTotal, hasBill: bills.length > 0, touched: [...memory.touched] };
   }
 
   function promptKey(element) {
@@ -219,10 +224,6 @@
   function onClick(event) {
     if (!event.isTrusted || !(event.target instanceof Element)) return;
     recordTouch(event.target);
-    if (donationCard?.contains(event.target)) {
-      const bounds = donationCard.getBoundingClientRect();
-      if (!donationIncluded && event.clientX >= bounds.left + bounds.width * 0.75) clickedUncheckedDonation = true;
-    }
     const element = event.target.closest(interactive) ||
       event.target.closest("label")?.control;
     if (!element) return;
@@ -238,7 +239,13 @@
     queueScan();
   }
 
-  const findingId = item => `${item.key}|${item.evidence}`;
+  function onChange(event) {
+    if (!event.isTrusted || !(event.target instanceof Element)) return;
+    recordTouch(event.target);
+    queueScan();
+  }
+
+  const findingId = item => `${item.key}|${item.evidence.replace(/(?:₹|\bINR\s*|\bRs\.?\s*|[$€£])\s*\d[\d,]*(?:\.\d+)?/gi, "").replace(/\s+/g, " ").trim()}`;
   let lastPage;
   let lastScan = 0;
 
@@ -252,7 +259,8 @@
     result = { active: true, stage: page.stage, findings, hasCart: Boolean(memory.cart), baseline, dismissed: dismissed.size };
     renderNotice(result);
     const update = JSON.stringify({
-      cart: memory.cart, count: findings.length, dismissed: [...dismissed], touched: [...memory.touched], listed: memory.listed
+      cart: memory.cart, count: findings.length, dismissed: [...dismissed], touched: [...memory.touched], listed: memory.listed,
+      choices: [...choices].slice(-200)
     });
     if (update !== lastUpdate) {
       lastUpdate = update;
@@ -452,6 +460,7 @@
     outline?.remove();
     notice?.host.remove();
     document.removeEventListener("click", onClick, true);
+    document.removeEventListener("change", onChange, true);
     chrome.runtime.onMessage.removeListener(onMessage);
     globalThis.checkoutScannerRunning = false;
   }
@@ -480,7 +489,9 @@
     dismissed = new Set(response.dismissed || []);
     memory.touched = new Set(response.touched || []);
     memory.listed = response.listed || {};
+    for (const choice of response.choices || []) choices.add(choice);
     document.addEventListener("click", onClick, true);
+    document.addEventListener("change", onChange, true);
     observer = new MutationObserver(records => { if (pageChanged(records)) queueScan(); });
     observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true });
     // Safety net for changes that produce no mutation, such as a layout-only visibility change.

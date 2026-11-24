@@ -13,7 +13,7 @@ This Chrome extension watches a shopper-selected web tab and flags visible signa
 
 The popup indicates whether it recognized the cart or payment screen and whether it saved the cart fee baseline. For unpacked updates, click **Reload** on the extension card at `chrome://extensions`, then refresh the shopping tab and start a new watch.
 
-On Blinkit, open **My Cart** and expand **Sub total** under **Bill details** if the individual items are collapsed. The detector checks for a positive **Feeding India donation** line and highlights the donation card. If the cart already included the donation when the watch began, the alert reports that observation without assuming who selected it.
+Charges and extras are read from the page's bill (the block around **Bill details** or **Price details** that also shows the total). A donation, tip or other extra is flagged only while it is in that bill, so unticking it clears the alert. Anything you tick or pick yourself while watching counts as your choice and is not flagged, including on later checkout pages. On quick-commerce carts, expand **Sub total** under **Bill details** if the individual charges are collapsed.
 
 The [activeTab permission](https://developer.chrome.com/docs/extensions/develop/concepts/activeTab) grants temporary access to the selected tab. The extension processes evidence locally. It reads displayed labels and selected controls, without reading typed field values. The tab's cart fee labels are held in Chrome's in-memory session storage to support same-origin navigation. The extension sends no data to a server and does not click any purchase or removal controls.
 

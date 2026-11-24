@@ -90,12 +90,26 @@ test("Payment review takes precedence over the retained cart summary", () => {
   }), "payment");
 });
 
-test("A billed donation gives evidence without assuming who selected it", () => {
-  const donation = item("Feeding India donation ₹1", { selected: true, billed: true });
-  const result = detect(page({ controls: [donation] }), {});
-  assert.equal(result[0].key, "basket");
-  assert.match(result[0].signal, /included in the bill/);
-  assert.deepEqual(detect(page({ controls: [{ ...donation, chosen: true }] }), {}), []);
+test("A donation follows its checkbox and the bill, not the offer card's text", () => {
+  const card = ticked => item("Feeding India donation ₹1", { toggle: ticked });
+  const billRow = item("Feeding India donation ₹1", { inBill: true });
+  const keys = (lines, touched = []) => withoutFees(detect(page({ hasBill: true, lines, touched }), {})).map(item => item.key);
+  // Unticked: the card still shows the amount, but nothing is billed.
+  assert.deepEqual(keys([card(false)]), []);
+  // Ticked by the site: the bill has the row.
+  assert.deepEqual(keys([card(true), billRow]), ["basket"]);
+  // Ticked by the shopper during the watch.
+  assert.deepEqual(keys([card(true), billRow], ["donat"]), []);
+  // A line outside the bill never counts as a charge when the page has a bill.
+  assert.deepEqual(keys([item("Feeding India donation ₹1")]), []);
+  // Pages without a recognisable bill fall back to every line.
+  assert.deepEqual(withoutFees(detect(page({ lines: [item("Feeding India donation ₹1")] }), {})).map(item => item.key), ["basket"]);
+});
+
+test("Charges outside the bill are not summarised when the page has a bill", () => {
+  const lines = [item("Delivery charge ₹25"), item("Handling charge ₹11", { inBill: true })];
+  const [fees] = detect(page({ hasBill: true, lines }), {});
+  assert.equal(fees.evidence, "Handling charge ₹11");
 });
 
 test("The free-delivery offer compares extra basket spend with the fee waived", () => {
@@ -323,4 +337,27 @@ test("An item that costs more in the cart than on its product card is flagged", 
 test("Fee summary ignores charges described in sentences rather than bill rows", () => {
   const result = detect(page({ lines: [item("Cancellation charges ₹50 apply after packing")] }), {});
   assert.deepEqual(result.filter(item => item.key === "fees"), []);
+});
+
+test("Evidence quotes the specific line rather than the block that contains it", () => {
+  const block = item("Yay! You got FREE delivery Join Pass for ₹99 and save ₹15 on this order Get ₹10 cashback");
+  const line = item("Join Pass for ₹99 and save ₹15 on this order");
+  const [offer] = detect(page({ lines: [block, line] }), {}).filter(item => item.key === "membershipUpsell");
+  assert.equal(offer.evidence, line.text);
+});
+
+test("A higher payment total caused by an extra the shopper picked is not reported", () => {
+  const cart = [item("Items total ₹80"), item("Grand total ₹136")];
+  const payment = [item("Items total ₹80"), item("Tip for delivery partner ₹30"), item("Grand total ₹166")];
+  const memory = {};
+  detect(page({ lines: cart }), memory);
+  assert.deepEqual(detect(page({ stage: "payment", lines: payment, touched: ["tip"] }), memory).filter(item => item.key === "total"), []);
+  const unexplained = detect(page({ stage: "payment", lines: payment }), memory).map(item => item.key);
+  assert.ok(unexplained.includes("total") && unexplained.includes("basket"));
+});
+
+test("A pre-selected extra the shopper touched on an earlier page is not flagged again", () => {
+  const protection = item("Order protection ₹19", { selected: true });
+  assert.deepEqual(keysOf(detect(page({ controls: [protection] }), {})), ["basket"]);
+  assert.deepEqual(keysOf(detect(page({ controls: [protection], touched: ["protect"] }), {})), []);
 });
