@@ -251,7 +251,9 @@
     const baseline = memory.cart ? { labels: memory.cart.labels || [], total: memory.cart.total || null } : null;
     result = { active: true, stage: page.stage, findings, hasCart: Boolean(memory.cart), baseline, dismissed: dismissed.size };
     renderNotice(result);
-    const update = JSON.stringify({ cart: memory.cart, count: findings.length, dismissed: [...dismissed], touched: [...memory.touched] });
+    const update = JSON.stringify({
+      cart: memory.cart, count: findings.length, dismissed: [...dismissed], touched: [...memory.touched], listed: memory.listed
+    });
     if (update !== lastUpdate) {
       lastUpdate = update;
       chrome.runtime.sendMessage({ type: "update", ...JSON.parse(update) }).then(response => {
@@ -477,6 +479,7 @@
     memory.cart = response.cart;
     dismissed = new Set(response.dismissed || []);
     memory.touched = new Set(response.touched || []);
+    memory.listed = response.listed || {};
     document.addEventListener("click", onClick, true);
     observer = new MutationObserver(records => { if (pageChanged(records)) queueScan(); });
     observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true });

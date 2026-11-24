@@ -254,3 +254,73 @@ test("A tip row worded 'Tip for delivery partner' counts as a billed extra", () 
   assert.equal(detect(page({ lines: [item("Tip for delivery partner ₹20")] }), {})[0].key, "basket");
   assert.deepEqual(detect(page({ lines: [item("Tip for delivery partner ₹20")], touched: ["tip"] }), {}), []);
 });
+
+const keysOf = findings => withoutFees(findings).map(item => item.key);
+
+test("Popularity and demand claims count as false urgency", () => {
+  for (const text of ["1.2K+ bought in past month", "500 people ordered this in the last hour", "In 23 carts", "High demand in your area", "Order within 2 hrs for delivery today", "Slots filling fast"]) {
+    assert.deepEqual(keysOf(detect(page({ lines: [item(text)] }), {})), ["urgency"], text);
+  }
+  for (const text of ["You bought this on 3 March", "4.3 ★ (1,234 ratings)", "Bought together often"]) {
+    assert.deepEqual(keysOf(detect(page({ lines: [item(text)] }), {})), [], text);
+  }
+});
+
+test("Loss-framed decline buttons and exit dialogs count as confirm shaming", () => {
+  for (const text of ["Continue without savings", "No, I don't want free delivery", "Skip and lose my discount"]) {
+    assert.deepEqual(keysOf(detect(page({ controls: [item(text)] }), {})), ["shame"], text);
+  }
+  assert.deepEqual(keysOf(detect(page({ dialogs: [item("Are you sure? You'll lose ₹120 savings on this order.")] }), {})), ["shame"]);
+  assert.deepEqual(keysOf(detect(page({ controls: [item("Continue"), item("Remove")] }), {})), []);
+});
+
+test("Pre-selected auto-renewal and pay-later options are flagged until chosen", () => {
+  const renew = item("Auto-renew my membership", { selected: true });
+  const later = item("Simpl - Pay later in 15 days", { selected: true });
+  assert.deepEqual(keysOf(detect(page({ controls: [renew, later] }), {})), ["trap", "payLater"]);
+  assert.deepEqual(keysOf(detect(page({ controls: [{ ...renew, chosen: true }, { ...later, selected: false }] }), {})), []);
+});
+
+test("A checkout membership offer is compared with what it saves on this order", () => {
+  const [offer] = detect(page({ lines: [item("Join Pass for ₹99 and save ₹45 on this order")] }), {});
+  assert.equal(offer.key, "membershipUpsell");
+  assert.match(offer.signal, /costs ₹99 but saves ₹45 .* does not cover it/);
+  assert.deepEqual(keysOf(detect(page({ lines: [item("Buy 1 get 1 free on chips ₹30")] }), {})), []);
+});
+
+test("Cashback paid as app credit and no-cost EMI with fees are surfaced", () => {
+  const [cashback] = detect(page({ lines: [item("Get ₹50 cashback as SuperCash, expires in 7 days")] }), {});
+  assert.equal(cashback.key, "cashback");
+  assert.match(cashback.signal, /expires/);
+  assert.deepEqual(keysOf(detect(page({ lines: [item("10% instant cashback with HDFC cards ₹150")] }), {})), []);
+  const emi = keysOf(detect(page({ lines: [item("No Cost EMI available"), item("Processing fee ₹199")] }), {}));
+  assert.ok(emi.includes("emiFee"));
+});
+
+test("A free-delivery claim with a delivery charge in the bill is flagged", () => {
+  const lines = [item("Yay! You got FREE delivery"), item("Delivery charge ₹25"), item("Grand total ₹105")];
+  assert.ok(keysOf(detect(page({ lines }), {})).includes("freeDelivery"));
+  const free = [item("Yay! You got FREE delivery"), item("Delivery charge ₹25 FREE")];
+  assert.ok(!keysOf(detect(page({ lines: free }), {})).includes("freeDelivery"));
+});
+
+test("Pre-ticked carry bags and WhatsApp offers are flagged", () => {
+  assert.deepEqual(keysOf(detect(page({ controls: [item("Paper bag ₹5", { selected: true })] }), {})), ["basket"]);
+  const whatsapp = item("Get offers on WhatsApp", { selected: true, toggleable: true });
+  assert.deepEqual(keysOf(detect(page({ controls: [whatsapp] }), {})), ["consent"]);
+});
+
+test("An item that costs more in the cart than on its product card is flagged", () => {
+  const memory = {};
+  detect(page({ stage: null, lines: [item("12% OFF 16 MINS Amul Masti Pouch Curd 1 kg ₹80 ₹90 ADD")] }), memory);
+  const result = detect(page({ lines: [item("Amul Masti Pouch Curd 1 kg ₹85")] }), memory);
+  assert.deepEqual(keysOf(result), ["drip"]);
+  assert.match(result[0].signal, /listed at ₹80 .* costs ₹85/);
+  assert.deepEqual(keysOf(detect(page({ lines: [item("Amul Masti Pouch Curd 1 kg ₹160")] }), memory)), [], "two units");
+  assert.deepEqual(keysOf(detect(page({ lines: [item("Amul Masti Pouch Curd 1 kg ₹80")] }), memory)), []);
+});
+
+test("Fee summary ignores charges described in sentences rather than bill rows", () => {
+  const result = detect(page({ lines: [item("Cancellation charges ₹50 apply after packing")] }), {});
+  assert.deepEqual(result.filter(item => item.key === "fees"), []);
+});

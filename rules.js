@@ -23,14 +23,19 @@
     credit: ["Store-credit refund", "Review the refund terms before you pay, especially if you need the money returned to your original payment method.", "nudge"],
     couponUpsell: ["Coupon spend threshold", "Check the coupon conditions and decide whether you want the extra items.", "nudge"],
     fees: ["Extra charges", "Check what each charge is for. Some, such as small-cart or late-night fees, depend on the order and can change.", "nudge"],
-    autoCoupon: ["Auto-applied coupon", "Check the coupon’s conditions, such as a minimum spend or eligible items. Removing items or changing the payment method can remove it.", "nudge"]
+    autoCoupon: ["Auto-applied coupon", "Check the coupon’s conditions, such as a minimum spend or eligible items. Removing items or changing the payment method can remove it.", "nudge"],
+    membershipUpsell: ["Membership upsell", "Compare the membership fee with what it saves on orders you actually place, and check whether it renews automatically.", "nudge"],
+    cashback: ["Cashback as app credit", "Cashback is not money off this order. Check where it is credited, when it expires, and what it can be spent on.", "nudge"],
+    freeDelivery: ["Free delivery not applied", "Check the delivery line in the bill and the conditions attached to the free-delivery offer.", "nudge"],
+    payLater: ["Pre-selected pay later", "Choose the payment method yourself. Pay-later and EMI options are credit and can add fees or interest.", "nudge"],
+    emiFee: ["No-cost EMI with fees", "Check the processing fee and the total you repay before choosing EMI.", "nudge"]
   };
 
   // A bill row is a fee when its label (the text before the amount) is short and names a fee, charge, or tax.
   const namedFee = /^(?:(?:delivery|handling|packaging)\s*[:·–—₹$€£-]|(?:tax(?:es)?|gst)\b)/i;
   const feeWord = /\b(?:fees?|charges?|surcharges?|tax(?:es)?|gst|cess)\b/i;
   const notFee = /\b(?:discount|saving|savings|off|waiver|cashback|refund|no|without|zero)\b/i;
-  const extra = /\b(?:tip|donat(?:e|ion)|insurance|protection|warranty|membership|add[- ]on|gift (?:wrap(?:ping)?|packag(?:e|ing))|subscription|free trial|(?:express|priority) (?:delivery|shipping))\b/i;
+  const extra = /\b(?:tip|donat(?:e|ion)|insurance|protection|warranty|membership|add[- ]on|gift (?:wrap(?:ping)?|packag(?:e|ing))|subscription|free trial|(?:express|priority) (?:delivery|shipping)|(?:carry|paper|cloth) bags?|eco[- ]friendly (?:packaging|bags?)|secured? (?:delivery|packaging))\b/i;
   const membership = /\b(?:subscription|membership|cancel(?:lation)? (?:your )?plan|free trial)\b/i;
   const billingContext = /\b(?:software|saas|cloud storage|productivity|workspace|streaming|subscription plan)\b/i;
   const discount = /(?:free|waived|included)\s*$/i;
@@ -43,12 +48,12 @@
   const feeName = text => feeLabel(text).toLowerCase().replace(/\s+(?:fees?|charges?)$/, "");
 
   // Topics link a bill row to the controls the shopper clicked, so an extra they chose is not reported.
-  const topicPattern = /\b(donat|tip|insur|protect|warrant|gift|member|subscri|express|priority|coupon|promo|voucher)/gi;
+  const topicPattern = /\b(donat|tip|insur|protect|warrant|gift|member|subscri|express|priority|carry|paper|eco|secure|coupon|promo|voucher)/gi;
   const topics = text => [...new Set(Array.from(text.matchAll(topicPattern), match => {
     const word = match[1].toLowerCase();
     return word === "promo" || word === "voucher" ? "coupon" : word;
   }))];
-  const extraRow = /^(?:[\w&'’ ]{0,24}\s)?(?:donation|tip|insurance|protection|warranty|gift (?:wrap(?:ping)?|packag(?:e|ing))|membership|subscription|(?:express|priority) (?:delivery|shipping))(?:\s[\w&'’ ]{0,24})?$/i;
+  const extraRow = /^(?:[\w&'’ ]{0,24}\s)?(?:donation|tip|insurance|protection|warranty|gift (?:wrap(?:ping)?|packag(?:e|ing))|membership|subscription|(?:express|priority) (?:delivery|shipping)|(?:carry|paper|cloth) bags?|eco[- ]friendly (?:packaging|bags?)|secured? (?:delivery|packaging))(?:\s[\w&'’ ]{0,24})?$/i;
   const offerWording = /\b(?:add|get|buy|only|join|upgrade|save|with|unlock|want)\b/i;
   // A bill row reads "<label> <amount>" with nothing after the amount.
   function billedExtra(text) {
@@ -84,6 +89,28 @@
   const subtotalRow = /^(?:sub\s?total|items? total|merchandise total|total mrp|(?:bag|cart|basket) total)\s*[:·–—-]?\s*$/i;
   // What the items cost after discounts; MRP totals are list prices and would understate the fee share.
   const itemsRow = /^(?:sub\s?total|items? total|(?:bag|cart|basket) total)\s*[:·–—-]?\s*$/i;
+  // Popularity claims count as false urgency: the CCPA definition includes "showing false popularity".
+  const popularity = /(?:\b\d[\d,.]*\s?[kKlL]?\+?\s+(?:people\s+|customers\s+|shoppers\s+|users\s+|others\s+)?(?:bought|ordered|purchased|booked)\b|\bin\s+\d[\d,]*\+?\s+(?:carts|bags)\b|\b\d[\d,]*\+?\s+(?:people|others|shoppers)\s+(?:have|added)\s+(?:this|it)\b|(?<!due to )\bhigh demand\b|\btrending (?:now|in your (?:area|city))\b)/i;
+  const declineStart = /^(?:no(?:,| thanks)?|i (?:prefer|will|don.t|do not|am ok|.m ok|.ll)|skip|continue without|proceed without|maybe later|not now|remove|cancel|give up)\b/i;
+  const shameWords = /\b(?:hate saving|don.t care|prefer to pay more|want to pay more|stay (?:uninsured|unprotected|unsecured)|don.t like saving|risk (?:my|losing)|don.t want to (?:help|thank)|rather pay more|miss out on savings|pay (?:full price|more)|(?:don.t|do not) (?:want|like|need) (?:to )?(?:save|savings|saving money|discounts?|offers?|free \w+|deals?|rewards?|benefits?|protection)|without (?:saving|savings|discounts?|protection|insurance|benefits?|rewards?|offers?)|lose (?:my |the |all |these )?(?:savings|discounts?|benefits?|rewards?|offers?)|miss (?:out|the deal))\b/i;
+  const lossFrame = /\byou(?:'ll|’ll| will)? (?:lose|miss out on|forfeit)\b.{0,40}(?:savings?|discounts?|benefits?|offers?|cashback|rewards?|₹)/i;
+  const autoRenew = /\b(?:auto[- ]?renew(?:al)?|autopay|auto[- ]?debit|recurring payments?|renews? automatically|standing instruction)\b/i;
+  const payLater = /\b(?:pay ?later|buy now,? pay later|bnpl|simpl|lazypay|postpaid|emi)\b/i;
+  const membershipOffer = /\b(?:join|get|add|buy|try|upgrade to|become an?|unlock)\b.{0,30}\b(?:membership|pass|gold|plus|insider|prime|bbstar|vip|club)\b/i;
+  const saveAmount = new RegExp(String.raw`\bsave\s+(${money})`, "i");
+  const freeDeliveryClaim = /^(?:yay!?\s*)?(?:you (?:got|get|have|unlocked)\s+|enjoy\s+|get\s+)?free delivery(?: on this order| applied| unlocked| for you)?\s*!?$/i;
+
+  // Product cards ("16 MINS Amul Curd 1 kg ₹80 ADD") record list prices to compare with the cart later.
+  const itemName = text => text.replace(/\b\d+\s*mins?\b|\b\d+%\s*off\b|^\s*(?:ad|sponsored|bestseller|new)\b/gi, " ")
+    .replace(/\s+/g, " ").trim().toLowerCase();
+  function productLine(text, listing) {
+    if (listing !== /\bADD\b|\badd to (?:cart|bag|basket)\b/i.test(text)) return null;
+    const amounts = prices(text);
+    if (!amounts.length || amounts.length > 2) return null;
+    const name = itemName(text.slice(0, text.indexOf(amounts[0].label)));
+    return name.length >= 8 && name.length <= 140 ? { name, amount: amounts[0].amount, currency: amounts[0].currency } : null;
+  }
+
   const renewalRate = new RegExp(String.raw`\b(?:then|renews? at|charged at)\s+(${money})\s*(?:\/|per )\s*(week|month|year)\b`, "i");
 
   function checkoutStage({ headings, lines, controls, route, hasTotal }) {
@@ -206,7 +233,8 @@
     // Quick-commerce fees are only listed inside the bill, so summarise what they add to the order.
     const charged = page.stage ? feeRows.flatMap(entry => {
       const amount = prices(entry.text).at(-1);
-      return amount?.amount > 0 && !discount.test(entry.text) ? [{ entry, amount, label: feeLabel(entry.text) }] : [];
+      const billLine = amount && !entry.text.slice(entry.text.lastIndexOf(amount.label) + amount.label.length).trim();
+      return billLine && amount.amount > 0 && !discount.test(entry.text) ? [{ entry, amount, label: feeLabel(entry.text) }] : [];
     }) : [];
     if (charged.length) {
       const currency = charged[0].amount.currency;
@@ -219,6 +247,29 @@
         ? " The small-cart charge applies because the order is below a minimum." : "";
       add("fees", `${rows.length === 1 ? "1 charge adds" : `${rows.length} charges add`} ${formatMoney(sum, currency)} to this order.${share}${smallCart}`,
         rows[0].entry, rows.map(row => `${row.label} ${formatMoney(row.amount.amount, currency)}`).join(" · "));
+      const deliveryRow = rows.find(row => /\bdelivery\b/i.test(row.label));
+      if (deliveryRow && page.lines.some(entry => freeDeliveryClaim.test(entry.text))) {
+        add("freeDelivery", `The page says delivery is free, but the bill charges ${formatMoney(deliveryRow.amount.amount, currency)} for “${deliveryRow.label}”.`, deliveryRow.entry);
+      }
+    }
+
+    // A price that rises between the product card and the cart. Whole multiples are treated as quantity.
+    memory.listed ??= {};
+    for (const entry of page.lines) {
+      const card = productLine(entry.text, true);
+      if (!card || card.currency !== "INR") continue;
+      if (memory.listed[card.name] === undefined && Object.keys(memory.listed).length >= 300) continue;
+      if (!(memory.listed[card.name] <= card.amount)) memory.listed[card.name] = card.amount;
+    }
+    if (page.stage) {
+      for (const entry of page.lines) {
+        const item = productLine(entry.text, false);
+        const listed = item && memory.listed[item.name];
+        if (!listed || item.amount <= listed + 0.5) continue;
+        const ratio = item.amount / listed;
+        if (ratio >= 2 && Math.abs(ratio - Math.round(ratio)) < 0.01) continue;
+        add("drip", `This item was listed at ${formatMoney(listed, "INR")} earlier in this session and costs ${formatMoney(item.amount, "INR")} here.`, entry);
+      }
     }
 
     for (const control of page.controls) {
@@ -230,13 +281,18 @@
         add("basket", signal, control);
       }
       if (control.toggleable && control.selected && !control.chosen &&
-          /\b(?:marketing (?:emails?|messages|communications|updates)|promotional (?:emails?|messages|communications|offers)|newsletter|personali[sz]ed ads?|allow tracking)\b/i.test(text) &&
+          /\b(?:marketing (?:emails?|messages|communications|updates)|promotional (?:emails?|messages|communications|offers)|newsletter|personali[sz]ed ads?|allow tracking|(?:offers?|promotions?|deals?) (?:on|via) (?:whatsapp|sms)|whatsapp (?:offers|promotions|marketing))\b/i.test(text) &&
           !/\b(?:opt out|unsubscribe|decline|disable|do not|don.t)\b/i.test(text)) {
         add("consent", "This option was already selected when the extension observed it.", control);
       }
-      if (/^(?:no(?:,| thanks)?|i (?:prefer|will|don.t|do not)|skip)\b/i.test(text) &&
-          /\b(?:hate saving|don.t care|prefer to pay more|want to pay more|stay (?:uninsured|unprotected|unsecured)|don.t like saving|risk (?:my|losing)|don.t want to (?:help|thank)|rather pay more|miss out on savings|pay full price)\b/i.test(text)) {
-        add("shame", "The decline option uses guilt, fear, or ridicule.", control);
+      if (declineStart.test(text) && shameWords.test(text)) {
+        add("shame", "The decline option uses guilt, fear, or a sense of loss.", control);
+      }
+      if (control.selected && !control.chosen && autoRenew.test(text) && !/\b(?:turn off|disable|cancel|stop|don.t|do not)\b/i.test(text)) {
+        add("trap", "Automatic renewal or a recurring payment was switched on before you chose it.", control);
+      }
+      if (control.selected && !control.chosen && payLater.test(text)) {
+        add("payLater", "A pay-later or EMI option was already selected when the extension observed it.", control);
       }
       if ((control.required && /\b(?:marketing|newsletter|promotional|share (?:my |your )?contacts|download (?:our|the) app)\b/i.test(text))) {
         add("forced", "An unrelated option is marked as required.", control);
@@ -257,6 +313,27 @@
       }
       if (page.stage && !touched.has("coupon") && !findings.some(item => item.key === "autoCoupon") && appliedCoupon(text)) {
         add("autoCoupon", "A coupon is applied, but you haven’t opened or applied one during this watch.", entry);
+      }
+      if (page.stage && text.length < 220 && membershipOffer.test(text) && !findings.some(item => item.key === "membershipUpsell")) {
+        const save = text.match(saveAmount);
+        const [cost] = prices(save ? text.replace(save[0], "") : text);
+        const [saving] = save ? prices(save[1]) : [];
+        if (cost?.amount > 0) {
+          const fee = formatMoney(cost.amount, cost.currency);
+          const signal = !saving || saving.currency !== cost.currency ? `The checkout promotes a paid membership costing ${fee}.`
+            : saving.amount < cost.amount ? `The membership costs ${fee} but saves ${formatMoney(saving.amount, saving.currency)} on this order, so this order alone does not cover it.`
+            : `The membership costs ${fee} and the page says it saves ${formatMoney(saving.amount, saving.currency)} on this order. Check whether that saving is guaranteed.`;
+          add("membershipUpsell", signal, entry);
+        }
+      }
+      if (page.stage && text.length < 240 && /\bcashback\b/i.test(text) && !/\binstant\b/i.test(text) &&
+          /\b(?:wallet|credits?|super ?cash|points|coins|gift card|balance|money)\b/i.test(text)) {
+        const expires = /\bexpir/i.test(text) ? " The page also says it expires." : "";
+        add("cashback", `This cashback is credited as app credit or points, not taken off this order.${expires}`, entry);
+      }
+      if (/\bno[- ]cost emi\b/i.test(text) && !findings.some(item => item.key === "emiFee")) {
+        const fee = page.lines.find(row => /\b(?:processing|emi|convenience) (?:fees?|charges?)\b/i.test(row.text) && prices(row.text).some(price => price.amount > 0));
+        if (fee) add("emiFee", "“No-cost EMI” is offered, but the page also lists a processing or EMI fee.", fee);
       }
       const upsell = getDeliveryUpsell(entry);
       if (upsell) add("upsell", upsell.comparison, entry, upsell.offer);
@@ -281,11 +358,13 @@
       if (page.stage && /\b(?:refunds? (?:are |will be )?(?:only|solely)|(?:only|solely) (?:receive|get) (?:a )?refund)\b.{0,48}\b(?:store credit|gift card|wallet balance)\b/i.test(text)) {
         add("credit", "The stated refund method is limited to store credit or a similar balance.", entry);
       }
-      if (/\b(?:only\s+(?:\d+|a few|few)\s+(?:items?\s+|units?\s+)?(?:left|remaining|in stock)|\d+\s+(?:people|shoppers|users)\s+(?:are )?(?:viewing|looking|watching)|(?:offer|deal|sale|reservation|price|delivery slot)\s+(?:expires|ends|resets|is held)|limited[- ]time offer|hurry|selling fast|almost gone|last chance)\b/i.test(text) ||
-          /^(?:only\s+)?\d+\s+left(?:\s+in stock)?!?$/i.test(text)) {
+      const scarcity = /\b(?:only\s+(?:\d+|a few|few)\s+(?:items?\s+|units?\s+|slots?\s+)?(?:left|remaining|in stock)|\d+\s+(?:people|shoppers|users)\s+(?:are )?(?:viewing|looking|watching)|(?:offer|deal|sale|reservation|price|delivery slot)\s+(?:expires|ends|resets|is held)|limited[- ]time offer|hurry|selling fast|almost gone|last chance|order (?:with)?in (?:the next )?\d+\s*(?:hrs?|hours?|mins?|minutes?)|(?:slots?|stock) (?:are |is )?(?:filling|running out|selling) fast)\b/i.test(text) ||
+          /^(?:only\s+)?\d+\s+left(?:\s+in stock)?!?$/i.test(text);
+      if (scarcity || (text.length < 160 && popularity.test(text))) {
         const clock = text.match(/\b\d{1,2}\s?:\s?\d{2}(?:\s?:\s?\d{2})?\b|\b\d{1,2}h\s*\d{1,2}m(?:\s*\d{1,2}s)?\b/i);
         const evidence = clock ? text.replace(clock[0], "[countdown]") : text;
-        let signal = "This message uses scarcity or a deadline to encourage a quick decision.";
+        let signal = scarcity ? "This message uses scarcity or a deadline to encourage a quick decision."
+          : "This message uses popularity or demand to encourage a quick decision.";
         if (clock) {
           memory.timers ??= new Map();
           if (memory.timers.size >= 60 && !memory.timers.has(evidence)) memory.timers.clear();
@@ -330,6 +409,9 @@
       if (!prompt.decline && /^accept all(?: cookies)?$/i.test(prompt.accept?.text || "") &&
           /\bcookies\b/i.test(prompt.text) && /\b(?:analytics|marketing|personali[sz]|advertising)\w*/i.test(prompt.text)) {
         add("interference", "The cookie dialog offers Accept all without a clear decline control.", prompt);
+      }
+      if (lossFrame.test(prompt.text || "")) {
+        add("shame", "The dialog warns that you will lose savings to discourage you from leaving or removing something.", prompt);
       }
       if (prompt.reappeared && /\b(?:notifications?|cookies?|offer|newsletter|download|app|subscribe|trial|membership)\b/i.test(prompt.text)) {
         add("nag", "This prompt returned after you dismissed it.", prompt);
