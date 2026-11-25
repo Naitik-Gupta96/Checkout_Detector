@@ -11,7 +11,7 @@ This Chrome extension watches a shopper-selected web tab and flags visible signa
 1. Extract the ZIP if applicable. Open `chrome://extensions` and turn on **Developer mode**.
 2. Choose **Load unpacked** and select the folder containing `manifest.json`. Pin the extension so you can see its badge.
 3. Open the cart on a website. Open the extension and click **Start watching**. Check that the cart has loaded before going to payment.
-4. The **Checkout Detector** panel opens at the bottom left when it finds an alert. Each alert names the pattern, quotes the text found on the page, and suggests a next step. **Show on page** minimizes the panel and outlines the relevant element. **I chose this** (for pre-selected extras) or **Dismiss** hides an alert for the rest of the watch.
+4. The **Checkout Detector** panel opens at the bottom left when it finds an alert. Each alert names the pattern, quotes the text found on the page, and suggests a next step. **Show on page** minimizes the panel and outlines the relevant element. **I chose this** (for pre-selected extras) or **Dismiss** hides an alert for the rest of the watch, and **Undo** in the panel or popup brings back the last one you hid.
 5. The toolbar badge counts current findings. The popup shows a **Cart → Payment** tracker and the fees recorded from your cart, so you can see what the payment screen is compared against. A dot in the toolbar indicates an active watch with zero current alerts.
 6. Click **Stop watching** in either view to end the session. If checkout opens a new tab or moves to another origin, start a fresh watch there. A new watch cannot reconstruct fee evidence from the previous tab.
 
@@ -67,6 +67,15 @@ Interface interference also checks cookie dialogs that expose **Accept all** and
 ## Test the project prototype
 
 From the parent folder, serve the supplied simulator over HTTP. For example, run `python -m http.server 8765 --bind 127.0.0.1 --directory <folder-containing-simulator>` and open the simulator through `http://127.0.0.1:8765`. The extension only watches HTTP and HTTPS pages.
+
+The team's hosted demo shop, [Cornerleaf Market](https://cornerleaf-checkout-demo.notableblueberry4.chatgpt.site/), has the same Dark and Fair modes and is what we use for the live demo.
+
+Results on the two demo shops (cart through payment, extension loaded in Chromium):
+
+| Demo shop | Dark mode | Fair mode |
+| --- | --- | --- |
+| Cornerleaf Market | All 6 planted patterns flagged: pre-selected order protection and marketing emails, scarcity banner, free-delivery threshold, coupon threshold, handling charge first shown at payment | No CCPA alerts; only the fee summary |
+| Mock Eats simulator | All 6 planted categories flagged: drip pricing, pre-selected extras, countdown, confirm shaming, trial renewal fine print, nagging | No CCPA alerts; the fee summary and the trial's renewal price |
 
 Use the Dark checkout to review default add-ons and step through payment. Repeat in Fair with an upfront fee and an extra that you deliberately opt into. For merchant validation, record the site, date, checkout step, expected evidence, actual result, and whether the suggested action was possible. Real merchant coverage remains unverified.
 

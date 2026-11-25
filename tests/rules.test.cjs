@@ -295,6 +295,13 @@ test("Pre-selected auto-renewal and pay-later options are flagged until chosen",
   assert.deepEqual(keysOf(detect(page({ controls: [{ ...renew, chosen: true }, { ...later, selected: false }] }), {})), []);
 });
 
+test("Trial fine print with a renewal price is surfaced even without the plan's name", () => {
+  const [renewal] = detect(page({ lines: [item("Free for 30 days, then ₹149/month. Auto-renews until cancelled in Account.")] }), {});
+  assert.equal(renewal.key, "renewal");
+  assert.match(renewal.signal, /₹149 per month/);
+  assert.deepEqual(keysOf(detect(page({ lines: [item("Free for 30 days, then ₹149/month.")] }), {})), []);
+});
+
 test("A checkout membership offer is compared with what it saves on this order", () => {
   const [offer] = detect(page({ lines: [item("Join Pass for ₹99 and save ₹45 on this order")] }), {});
   assert.equal(offer.key, "membershipUpsell");

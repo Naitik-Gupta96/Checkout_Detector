@@ -63,6 +63,8 @@ main { padding: 14px 16px 12px; }
 .empty { padding: 14px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--ink-2); text-align: center; }
 #alert-tools { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 #alert-tools[hidden] { display: none; }
+#dismissed-tools { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; color: var(--ink-3); }
+#dismissed-tools[hidden] { display: none; }
 #copy-status, #diagnostics-status { color: var(--ink-3); font-size: 12px; }
 
 #coverage-view h2 { font-size: 13px; font-weight: 650; }

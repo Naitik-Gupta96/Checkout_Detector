@@ -353,7 +353,8 @@
       if (page.stage && /\b(?:coupon|promo(?: code)?|discount|voucher)\b.{0,45}\b(?:removed|no longer (?:applies|valid|eligible)|wasn.t applied|couldn.t be applied|not applied|has expired)\b/i.test(text)) {
         add("coupon", "The checkout says a discount is unavailable or was removed from this order.", entry);
       }
-      if (membership.test(text) && /\b(?:free trial|free for \d+ (?:days?|weeks?|months?))\b/i.test(text)) {
+      // Trial fine print often sits in its own line under the offer, so an auto-renew notice counts as the membership context.
+      if ((membership.test(text) || /\bauto[- ]?renews?\b/i.test(text)) && /\b(?:free trial|free for \d+ (?:days?|weeks?|months?))\b/i.test(text)) {
         const renewal = text.match(renewalRate);
         if (renewal && prices(renewal[1])[0]?.amount > 0) {
           add("renewal", `After the free period, the page lists ${renewal[1]} per ${renewal[2].toLowerCase()}.`, entry);

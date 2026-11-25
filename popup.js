@@ -61,6 +61,11 @@ $("#copy").addEventListener("click", () => {
   copy(`Checkout Detector · ${new URL(activeTab.url).hostname}\n\n${report}`, copyStatus);
 });
 
+$("#undo").addEventListener("click", async () => {
+  await chrome.tabs.sendMessage(activeTab.id, { type: "restore" }).catch(() => null);
+  refresh();
+});
+
 diagnosticsButton.addEventListener("click", async () => {
   const report = await chrome.tabs.sendMessage(activeTab.id, { type: "diagnostics" }).catch(() => null);
   if (!report) {
@@ -135,7 +140,9 @@ async function refresh() {
   count.dataset.alert = String(signals.length > 0);
   empty.hidden = signals.length > 0;
   empty.textContent = !watching ? "Start watching to see alerts for this tab."
-    : status.dismissed ? `No open alerts. ${status.dismissed} dismissed.` : "No alerts on this screen.";
+    : status.dismissed ? "No open alerts." : "No alerts on this screen.";
+  $("#dismissed-tools").hidden = !watching || !status.dismissed;
+  $("#dismissed-count").textContent = `${status?.dismissed || 0} dismissed`;
 
   const view = JSON.stringify(signals.map(({ key, evidence, signal }) => [key, evidence, signal]));
   if (view === lastView) return;

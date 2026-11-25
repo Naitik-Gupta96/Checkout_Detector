@@ -275,6 +275,13 @@
     scan();
   }
 
+  // Dismissing is reversible: Undo brings back the most recently dismissed alert.
+  function restore() {
+    const last = [...dismissed].pop();
+    if (last) dismissed.delete(last);
+    scan();
+  }
+
   function emptyMessage({ stage, hasCart, baseline }) {
     if (stage === "payment" && !hasCart) return "Open the cart first so fees added at payment can be compared.";
     if (stage === "payment") return "No new fees since the cart. Check the total and selected options before paying.";
@@ -310,7 +317,7 @@
     const summaryText = findings.length ? `${findings.length} to review${step}` : `Watching${step}`;
     if (summary.textContent !== summaryText) summary.textContent = summaryText;
     summary.dataset.alert = String(findings.length > 0);
-    const key = JSON.stringify([findings.map(({ key, evidence, signal }) => [key, evidence, signal]), emptyMessage(status)]);
+    const key = JSON.stringify([findings.map(({ key, evidence, signal }) => [key, evidence, signal]), emptyMessage(status), status.dismissed]);
     if (key === noticeKey) return;
     noticeKey = key;
     const scroll = list.scrollTop;
@@ -327,6 +334,14 @@
       dismiss
     })));
     if (!findings.length) list.append(CheckoutUI.element("p", emptyMessage(status), "empty"));
+    if (status.dismissed) {
+      const row = CheckoutUI.element("p", `${status.dismissed} dismissed`, "undo");
+      const undo = CheckoutUI.element("button", "Undo", "link quiet");
+      undo.type = "button";
+      undo.addEventListener("click", restore);
+      row.append(undo);
+      list.append(row);
+    }
     list.scrollTop = scroll;
   }
 
@@ -390,6 +405,8 @@
         display: grid; gap: 8px; padding: 10px; scrollbar-width: thin; }
       .list[hidden], footer[hidden] { display: none; }
       .empty { color: var(--ink-2); padding: 2px; }
+      .undo { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        color: var(--ink-3); font-size: 12px; padding: 0 2px; }
       footer { display: flex; justify-content: space-between; align-items: center; gap: 10px;
         padding: 8px 10px 8px 12px; border-top: 1px solid var(--line); background: var(--card); }
       footer small { color: var(--ink-3); font-size: 11.5px; }
@@ -472,6 +489,10 @@
     }
     if (message.type === "dismiss") {
       dismiss(message);
+      reply({ ok: true });
+    }
+    if (message.type === "restore") {
+      restore();
       reply({ ok: true });
     }
     if (message.type === "diagnostics") reply(diagnostics());
