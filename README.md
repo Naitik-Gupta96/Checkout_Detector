@@ -2,6 +2,10 @@
 
 This Chrome extension watches a shopper-selected web tab and flags visible signals associated with the 13 categories in [Annexure 1 of the CCPA guidelines](https://consumeraffairs.gov.in/public/upload/files/The%20Guidelines%20for%20Prevention%20and%20Regulation%20of%20Dark%20Patterns%2C%202023_1732705993.pdf). Each card shows the observed evidence, a suggested next step, and a control that highlights the relevant part of the page.
 
+![The on-page panel flagging a pre-selected tip and a price rise on a quick-commerce test cart](docs/screenshots/cart-panel.png)
+
+<img src="docs/screenshots/payment-popup.png" alt="The popup on a payment page, with the Cart to Payment tracker and a drip pricing alert" width="320">
+
 ## Install and use
 
 1. Extract the ZIP if applicable. Open `chrome://extensions` and turn on **Developer mode**.
